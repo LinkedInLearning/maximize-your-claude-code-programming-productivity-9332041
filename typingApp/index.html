@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Typing Test</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>typing<span class="accent">.</span>test</h1>
+      <div id="stats" class="stats hidden">
+        <span class="stat"><span id="live-wpm">0</span> <small>wpm</small></span>
+        <span class="stat"><span id="live-acc">100</span><small>%</small></span>
+        <span class="stat"><span id="live-time">0</span> <small>s</small></span>
+      </div>
+    </header>
+
+    <main>
+      <div id="screen-ready" class="screen active">
+        <div class="passage-select">
+          <button class="mode-btn active" data-mode="common">common words</button>
+          <button class="mode-btn" data-mode="quotes">quotes</button>
+          <button class="mode-btn" data-mode="code">code</button>
+        </div>
+        <div id="passage-display" class="passage"></div>
+        <p class="hint">click above or press <kbd>Enter</kbd> to start</p>
+      </div>
+
+      <div id="screen-typing" class="screen">
+        <div id="typing-passage" class="passage"></div>
+        <input id="typing-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="start typing…" />
+      </div>
+
+      <div id="screen-results" class="screen">
+        <div class="results-grid">
+          <div class="result-block">
+            <div class="result-value" id="result-wpm">—</div>
+            <div class="result-label">wpm</div>
+          </div>
+          <div class="result-block">
+            <div class="result-value" id="result-acc">—</div>
+            <div class="result-label">accuracy</div>
+          </div>
+          <div class="result-block">
+            <div class="result-value" id="result-time">—</div>
+            <div class="result-label">time</div>
+          </div>
+          <div class="result-block">
+            <div class="result-value" id="result-chars">—</div>
+            <div class="result-label">chars</div>
+          </div>
+        </div>
+        <div class="result-actions">
+          <button id="btn-retry" class="btn-primary">retry <kbd>Tab</kbd></button>
+          <button id="btn-new" class="btn-secondary">new test <kbd>Enter</kbd></button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
