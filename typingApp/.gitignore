@@ -1,0 +1,4 @@
+backend/typingapp.db
+__pycache__/
+*.pyc
+.venv/

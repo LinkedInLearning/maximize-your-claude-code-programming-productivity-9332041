@@ -1,9 +1,8 @@
 (() => {
   "use strict";
 
-  const PASSAGES = window.PASSAGES;
-
   const STORAGE_KEY = "typingapp.results";
+  const PLAYER_KEY = "typingapp.player";
   const MIN_WPM = 60;
   const CARET_RATIO = 0.5; // matches .caret-marker left: 50%
   const STRIP_PADDING_PX = 24; // matches .strip padding: 0 24px
@@ -27,15 +26,16 @@
   const rClose = document.getElementById("r-close");
 
   // State
-  let passageIdx = 0;
+  let player = null; // {id, name}
+  let currentPassage = null; // {id, text}
   let passage = "";
-  let chars = []; // array of <span> for each char
-  let charWidthPx = 14; // measured at runtime
+  let chars = [];
+  let charWidthPx = 14;
   let caretIndex = 0;
   let correctChars = 0;
   let totalKeystrokes = 0;
-  let errorPositions = new Set(); // current uncorrected error indices
-  let keystrokeLog = []; // [{t, correct}] for live-WPM rolling window
+  let errorPositions = new Set();
+  let keystrokeLog = [];
   let startTimeMs = 0;
   let finished = false;
   let lastFrameMs = 0;
@@ -54,10 +54,26 @@
     if (w > 0) charWidthPx = w;
   }
 
-  function loadPassage(idx) {
+  async function ensurePlayer() {
+    try {
+      const raw = localStorage.getItem(PLAYER_KEY);
+      if (raw) {
+        const p = JSON.parse(raw);
+        if (p && p.id && p.name) return p;
+      }
+    } catch {}
+    let name = null;
+    while (!name) {
+      name = (window.prompt("Enter your arcade name (1-32 chars):") || "").trim();
+    }
+    const created = await window.API.registerUser(name);
+    localStorage.setItem(PLAYER_KEY, JSON.stringify(created));
+    return created;
+  }
+
+  function renderPassage(text) {
     cancelAnimationFrame(rafId);
-    passageIdx = ((idx % PASSAGES.length) + PASSAGES.length) % PASSAGES.length;
-    passage = PASSAGES[passageIdx];
+    passage = text;
     caretIndex = 0;
     correctChars = 0;
     totalKeystrokes = 0;
@@ -79,17 +95,27 @@
     }
     if (chars[0]) chars[0].classList.add("cur");
 
-    passageNumEl.textContent = String(passageIdx + 1);
     wpmEl.textContent = "0";
     accEl.textContent = "100%";
 
     measureCharWidth();
-    // Start with char 0 aligned under the caret marker (text "starts in the middle").
     scrollOffsetPx = STRIP_PADDING_PX - viewport.clientWidth * CARET_RATIO;
     strip.style.transform = `translate(${-scrollOffsetPx}px, -50%)`;
 
     viewport.focus();
     rafId = requestAnimationFrame(tick);
+  }
+
+  async function loadNextPassage() {
+    const p = await window.API.fetchNextPassage(player.id);
+    currentPassage = p;
+    passageNumEl.textContent = String(p.id);
+    renderPassage(p.text);
+  }
+
+  function restartCurrent() {
+    if (!currentPassage) return;
+    renderPassage(currentPassage.text);
   }
 
   function elapsedMs() {
@@ -130,15 +156,12 @@
     const dt = Math.min(0.05, (t - lastFrameMs) / 1000);
     lastFrameMs = t;
 
-    // Only scroll once typing has begun.
     if (startTimeMs > 0) {
       const targetWpm = Math.max(MIN_WPM, liveWpm());
       const charsPerSec = (targetWpm * 5) / 60;
       const pxPerSec = charsPerSec * charWidthPx;
       scrollOffsetPx += pxPerSec * dt;
 
-      // Clamp: scroll cannot get more than MAX_LOOKAHEAD_CHARS ahead of caret,
-      // and never less than the initial centered position (char 0 under marker).
       const caretCenteredOffset = STRIP_PADDING_PX + caretIndex * charWidthPx - viewport.clientWidth * CARET_RATIO;
       const maxAllowed = caretCenteredOffset + MAX_LOOKAHEAD_CHARS * charWidthPx;
       const minAllowed = STRIP_PADDING_PX - viewport.clientWidth * CARET_RATIO;
@@ -160,29 +183,24 @@
     if (e.key === "Backspace") {
       e.preventDefault();
       if (caretIndex === 0) return;
-      // Move caret back; clear error/done state on the previous index.
       caretIndex--;
       const prev = chars[caretIndex];
       if (errorPositions.has(caretIndex)) {
         errorPositions.delete(caretIndex);
       } else {
-        // It was a correct char being undone — decrement correct count.
         correctChars = Math.max(0, correctChars - 1);
       }
       prev.classList.remove("done", "err");
-      // Clear cur from whatever currently has it, mark prev as cur.
       const oldCur = strip.querySelector(".ch.cur");
       if (oldCur) oldCur.classList.remove("cur");
       prev.classList.add("cur");
       return;
     }
 
-    // Only consume single printable characters.
     if (e.key.length !== 1) return;
     e.preventDefault();
 
     if (caretIndex >= passage.length) return;
-
     if (!startTimeMs) startTimeMs = performance.now();
 
     const expected = passage[caretIndex];
@@ -219,7 +237,7 @@
 
     const result = {
       timestamp: new Date().toISOString(),
-      passageId: passageIdx,
+      passageId: currentPassage ? currentPassage.id : null,
       wpm: Math.round(wpm * 10) / 10,
       accuracy: Math.round(acc * 1000) / 1000,
       durationMs: Math.round(ms),
@@ -266,7 +284,7 @@
     ];
     for (const r of results) {
       lines.push(
-        `${r.timestamp}\t${r.passageId + 1}\t${r.wpm}\t${(r.accuracy * 100).toFixed(1)}%\t${(r.durationMs / 1000).toFixed(1)}`
+        `${r.timestamp}\t${r.passageId}\t${r.wpm}\t${(r.accuracy * 100).toFixed(1)}%\t${(r.durationMs / 1000).toFixed(1)}`
       );
     }
     const blob = new Blob([lines.join("\n")], { type: "text/plain" });
@@ -283,15 +301,27 @@
   // Wire events
   window.addEventListener("keydown", handleKey);
   viewport.addEventListener("click", () => viewport.focus());
-  restartBtn.addEventListener("click", () => loadPassage(passageIdx));
-  nextBtn.addEventListener("click", () => loadPassage(passageIdx + 1));
+  restartBtn.addEventListener("click", restartCurrent);
+  nextBtn.addEventListener("click", () => loadNextPassage().catch(reportError));
   exportBtn.addEventListener("click", exportResults);
   rNext.addEventListener("click", () => {
     modal.classList.add("hidden");
-    loadPassage(passageIdx + 1);
+    loadNextPassage().catch(reportError);
   });
   rClose.addEventListener("click", () => modal.classList.add("hidden"));
 
+  function reportError(err) {
+    console.error(err);
+    alert("API error — is the backend running on http://127.0.0.1:8000?\n\n" + err.message);
+  }
+
   // Boot
-  loadPassage(0);
+  (async () => {
+    try {
+      player = await ensurePlayer();
+      await loadNextPassage();
+    } catch (err) {
+      reportError(err);
+    }
+  })();
 })();
