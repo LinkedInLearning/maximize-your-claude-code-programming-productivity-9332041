@@ -1,266 +1,308 @@
-const PASSAGES = {
-  common: [
-    "the quick brown fox jumps over the lazy dog and runs through the forest at full speed without stopping once",
-    "practice makes perfect when you type every day your fingers learn where each key lives on the keyboard",
-    "good typing speed comes from accuracy first focus on hitting the right keys and the speed will follow naturally",
-    "the sun sets in the west and rises in the east every single day without fail no matter what the season",
-    "learning to type faster is one of the best investments you can make as a programmer or writer in any field",
-    "keep your eyes on the screen not on your hands trust your fingers to find the keys on their own over time",
-    "a rolling stone gathers no moss but a steady typist gathers great speed through calm and consistent practice",
-    "words per minute is a measure of how fast you can type accurately it takes time to build up to high speeds",
-  ],
-  quotes: [
-    "the only way to do great work is to love what you do if you have not found it yet keep looking do not settle",
-    "in the middle of every difficulty lies opportunity the secret is to keep moving forward even when it is hard",
-    "it does not matter how slowly you go as long as you do not stop progress is progress no matter how small",
-    "the future belongs to those who believe in the beauty of their dreams and work hard each day to achieve them",
-    "success is not final failure is not fatal it is the courage to continue that counts above all else in life",
-    "life is what happens when you are busy making other plans so stay present and enjoy each moment as it comes",
-    "the greatest glory in living lies not in never falling but in rising every time we fall and trying again",
-    "you miss one hundred percent of the shots you do not take so step up and give it your very best every time",
-  ],
-  code: [
-    "function add(a, b) { return a + b; } const result = add(3, 7); console.log(result);",
-    "const items = [1, 2, 3, 4, 5]; const doubled = items.map(x => x * 2); console.log(doubled);",
-    "async function fetchData(url) { const res = await fetch(url); return res.json(); }",
-    "class Stack { constructor() { this.data = []; } push(v) { this.data.push(v); } pop() { return this.data.pop(); } }",
-    "const greet = name => `Hello, ${name}! Welcome back.`; console.log(greet('world'));",
-    "for (let i = 0; i < 10; i++) { if (i % 2 === 0) { console.log(i + ' is even'); } }",
-    "const obj = { name: 'Alice', age: 30 }; const { name, age } = obj; console.log(name, age);",
-    "function fibonacci(n) { if (n <= 1) return n; return fibonacci(n - 1) + fibonacci(n - 2); }",
-  ],
-};
+(() => {
+  "use strict";
 
-// ---- State ----
-let mode = 'common';
-let passage = '';
-let charStates = []; // 'untyped' | 'correct' | 'wrong' | 'extra'
-let cursorPos = 0;
-let typedHistory = []; // per-char typed input
-let startTime = null;
-let timerInterval = null;
-let elapsedSeconds = 0;
-let totalTyped = 0;
-let totalCorrect = 0;
-let isRunning = false;
-let isFinished = false;
+  const PASSAGES = [
+    "The quick brown fox jumps over the lazy dog while the sun sets behind a row of distant pines.",
+    "Programs must be written for people to read, and only incidentally for machines to execute.",
+    "It was the best of times, it was the worst of times, it was the age of wisdom, it was the age of foolishness.",
+    "Simplicity is the ultimate sophistication; the most complex problems often yield to the cleanest ideas.",
+    "All happy families are alike; each unhappy family is unhappy in its own way.",
+    "In the middle of the journey of our life I came to myself within a dark wood where the straight way was lost.",
+    "The only way to learn a new programming language is by writing programs in it, line after careful line.",
+    "Space, the final frontier; these are the voyages of a small ship on a long, quiet, persistent mission.",
+    "She sells seashells by the seashore, and the shells she sells are surely seashells from the shore.",
+    "Talk is cheap. Show me the code, and I will tell you what your team values most about its craft.",
+  ];
 
-// ---- DOM refs ----
-const screenReady = document.getElementById('screen-ready');
-const screenTyping = document.getElementById('screen-typing');
-const screenResults = document.getElementById('screen-results');
-const passageDisplay = document.getElementById('passage-display');
-const typingPassage = document.getElementById('typing-passage');
-const typingInput = document.getElementById('typing-input');
-const liveWpm = document.getElementById('live-wpm');
-const liveAcc = document.getElementById('live-acc');
-const liveTime = document.getElementById('live-time');
-const statsBar = document.getElementById('stats');
-const modeButtons = document.querySelectorAll('.mode-btn');
+  const STORAGE_KEY = "typingapp.results";
+  const MIN_WPM = 60;
+  const CARET_RATIO = 0.5; // matches .caret-marker left: 50%
+  const STRIP_PADDING_PX = 24; // matches .strip padding: 0 24px
+  const MAX_LOOKAHEAD_CHARS = 6; // clamp: scroll never more than N chars ahead of caret
+  const LIVE_WPM_WINDOW_MS = 5000;
 
-// ---- Init ----
-function pickPassage() {
-  const list = PASSAGES[mode];
-  return list[Math.floor(Math.random() * list.length)];
-}
+  // DOM
+  const viewport = document.getElementById("viewport");
+  const strip = document.getElementById("strip");
+  const wpmEl = document.getElementById("wpm");
+  const accEl = document.getElementById("acc");
+  const passageNumEl = document.getElementById("passage-num");
+  const restartBtn = document.getElementById("restart");
+  const nextBtn = document.getElementById("next");
+  const exportBtn = document.getElementById("export");
+  const modal = document.getElementById("results-modal");
+  const rWpm = document.getElementById("r-wpm");
+  const rAcc = document.getElementById("r-acc");
+  const rTime = document.getElementById("r-time");
+  const rNext = document.getElementById("r-next");
+  const rClose = document.getElementById("r-close");
 
-function buildCharSpans(text, container) {
-  container.innerHTML = '';
-  return text.split('').map((ch, i) => {
-    const span = document.createElement('span');
-    span.className = 'char';
-    span.textContent = ch === ' ' ? ' ' : ch;
-    span.dataset.index = i;
-    container.appendChild(span);
-    return { ch, state: 'untyped', span };
-  });
-}
+  // State
+  let passageIdx = 0;
+  let passage = "";
+  let chars = []; // array of <span> for each char
+  let charWidthPx = 14; // measured at runtime
+  let caretIndex = 0;
+  let correctChars = 0;
+  let totalKeystrokes = 0;
+  let errorPositions = new Set(); // current uncorrected error indices
+  let keystrokeLog = []; // [{t, correct}] for live-WPM rolling window
+  let startTimeMs = 0;
+  let finished = false;
+  let lastFrameMs = 0;
+  let scrollOffsetPx = 0;
+  let rafId = 0;
 
-function showScreen(screen) {
-  [screenReady, screenTyping, screenResults].forEach(s => s.classList.remove('active'));
-  screen.classList.add('active');
-}
-
-function loadReady() {
-  isRunning = false;
-  isFinished = false;
-  passage = pickPassage();
-  charStates = buildCharSpans(passage, passageDisplay);
-  statsBar.classList.add('hidden');
-  showScreen(screenReady);
-}
-
-function startGame() {
-  passage = pickPassage();
-  charStates = buildCharSpans(passage, typingPassage);
-  cursorPos = 0;
-  typedHistory = [];
-  totalTyped = 0;
-  totalCorrect = 0;
-  startTime = null;
-  elapsedSeconds = 0;
-  isRunning = true;
-  isFinished = false;
-
-  updateCursor();
-  statsBar.classList.remove('hidden');
-  liveWpm.textContent = '0';
-  liveAcc.textContent = '100';
-  liveTime.textContent = '0';
-
-  showScreen(screenTyping);
-  typingInput.value = '';
-  typingInput.focus();
-}
-
-// ---- Cursor ----
-function updateCursor() {
-  charStates.forEach(({ span }, i) => {
-    span.classList.remove('cursor');
-  });
-  if (cursorPos < charStates.length) {
-    charStates[cursorPos].span.classList.add('cursor');
+  function measureCharWidth() {
+    const probe = document.createElement("span");
+    probe.textContent = "M".repeat(50);
+    probe.style.visibility = "hidden";
+    probe.style.position = "absolute";
+    probe.className = "ch";
+    strip.appendChild(probe);
+    const w = probe.getBoundingClientRect().width / 50;
+    strip.removeChild(probe);
+    if (w > 0) charWidthPx = w;
   }
 
-  // Scroll cursor into view
-  if (cursorPos < charStates.length) {
-    charStates[cursorPos].span.scrollIntoView({ block: 'nearest' });
-  }
-}
+  function loadPassage(idx) {
+    cancelAnimationFrame(rafId);
+    passageIdx = ((idx % PASSAGES.length) + PASSAGES.length) % PASSAGES.length;
+    passage = PASSAGES[passageIdx];
+    caretIndex = 0;
+    correctChars = 0;
+    totalKeystrokes = 0;
+    errorPositions = new Set();
+    keystrokeLog = [];
+    startTimeMs = 0;
+    finished = false;
+    scrollOffsetPx = 0;
+    lastFrameMs = 0;
 
-// ---- Typing logic ----
-typingInput.addEventListener('input', handleInput);
-typingInput.addEventListener('keydown', handleKeydown);
-
-function handleKeydown(e) {
-  if (!isRunning || isFinished) return;
-
-  if (e.key === 'Backspace') {
-    e.preventDefault();
-    if (cursorPos > 0) {
-      cursorPos--;
-      const c = charStates[cursorPos];
-      c.state = 'untyped';
-      c.span.className = 'char';
-      typedHistory.pop();
+    strip.innerHTML = "";
+    chars = [];
+    for (let i = 0; i < passage.length; i++) {
+      const span = document.createElement("span");
+      span.className = "ch";
+      span.textContent = passage[i];
+      strip.appendChild(span);
+      chars.push(span);
     }
-    updateCursor();
-    return;
-  }
-}
+    if (chars[0]) chars[0].classList.add("cur");
 
-function handleInput(e) {
-  if (!isRunning || isFinished) return;
+    passageNumEl.textContent = String(passageIdx + 1);
+    wpmEl.textContent = "0";
+    accEl.textContent = "100%";
 
-  const val = typingInput.value;
-  if (!val) return;
+    measureCharWidth();
+    // Start with char 0 aligned under the caret marker (text "starts in the middle").
+    scrollOffsetPx = STRIP_PADDING_PX - viewport.clientWidth * CARET_RATIO;
+    strip.style.transform = `translate(${-scrollOffsetPx}px, -50%)`;
 
-  // Start timer on first keystroke
-  if (!startTime) {
-    startTime = Date.now();
-    timerInterval = setInterval(tickTimer, 200);
+    viewport.focus();
+    rafId = requestAnimationFrame(tick);
   }
 
-  // Process each character typed (usually 1 at a time)
-  for (const ch of val) {
-    if (cursorPos >= charStates.length) break;
-
-    const expected = charStates[cursorPos].ch;
-    const correct = ch === expected;
-
-    charStates[cursorPos].state = correct ? 'correct' : 'wrong';
-    charStates[cursorPos].span.className = 'char ' + (correct ? 'correct' : (expected === ' ' ? 'wrong-space' : 'wrong'));
-
-    typedHistory.push(ch);
-    totalTyped++;
-    if (correct) totalCorrect++;
-    cursorPos++;
+  function elapsedMs() {
+    return startTimeMs ? performance.now() - startTimeMs : 0;
   }
 
-  typingInput.value = '';
-  updateCursor();
-  updateLiveStats();
-
-  if (cursorPos >= charStates.length) {
-    finishGame();
+  function overallWpm() {
+    const ms = elapsedMs();
+    if (ms < 250) return 0;
+    return (correctChars / 5) / (ms / 60000);
   }
-}
 
-// ---- Timer ----
-function tickTimer() {
-  if (!startTime) return;
-  elapsedSeconds = (Date.now() - startTime) / 1000;
-  liveTime.textContent = Math.floor(elapsedSeconds);
-  updateLiveStats();
-}
+  function liveWpm() {
+    const now = performance.now();
+    while (keystrokeLog.length && now - keystrokeLog[0].t > LIVE_WPM_WINDOW_MS) {
+      keystrokeLog.shift();
+    }
+    if (keystrokeLog.length < 3) return overallWpm();
+    const correct = keystrokeLog.filter((k) => k.correct).length;
+    const windowMin = (now - keystrokeLog[0].t) / 60000;
+    if (windowMin <= 0) return overallWpm();
+    return (correct / 5) / windowMin;
+  }
 
-// ---- Stats ----
-function calcWpm(chars, seconds) {
-  if (seconds < 0.5) return 0;
-  return Math.round((chars / 5) / (seconds / 60));
-}
+  function accuracy() {
+    if (totalKeystrokes === 0) return 1;
+    return correctChars / totalKeystrokes;
+  }
 
-function updateLiveStats() {
-  const elapsed = startTime ? (Date.now() - startTime) / 1000 : 0;
-  liveWpm.textContent = calcWpm(totalCorrect, elapsed);
-  liveAcc.textContent = totalTyped > 0 ? Math.round((totalCorrect / totalTyped) * 100) : 100;
-}
+  function updateStats() {
+    wpmEl.textContent = String(Math.round(overallWpm()));
+    accEl.textContent = `${Math.round(accuracy() * 100)}%`;
+  }
 
-// ---- Finish ----
-function finishGame() {
-  isFinished = true;
-  isRunning = false;
-  clearInterval(timerInterval);
+  function tick(t) {
+    if (finished) return;
+    if (!lastFrameMs) lastFrameMs = t;
+    const dt = Math.min(0.05, (t - lastFrameMs) / 1000);
+    lastFrameMs = t;
 
-  elapsedSeconds = (Date.now() - startTime) / 1000;
-  const wpm = calcWpm(totalCorrect, elapsedSeconds);
-  const acc = totalTyped > 0 ? Math.round((totalCorrect / totalTyped) * 100) : 100;
-  const time = elapsedSeconds.toFixed(1) + 's';
-  const chars = `${totalCorrect}/${totalTyped}`;
+    // Only scroll once typing has begun.
+    if (startTimeMs > 0) {
+      const targetWpm = Math.max(MIN_WPM, liveWpm());
+      const charsPerSec = (targetWpm * 5) / 60;
+      const pxPerSec = charsPerSec * charWidthPx;
+      scrollOffsetPx += pxPerSec * dt;
 
-  document.getElementById('result-wpm').textContent = wpm;
-  document.getElementById('result-acc').textContent = acc + '%';
-  document.getElementById('result-time').textContent = time;
-  document.getElementById('result-chars').textContent = chars;
+      // Clamp: scroll cannot get more than MAX_LOOKAHEAD_CHARS ahead of caret,
+      // and never less than the initial centered position (char 0 under marker).
+      const caretCenteredOffset = STRIP_PADDING_PX + caretIndex * charWidthPx - viewport.clientWidth * CARET_RATIO;
+      const maxAllowed = caretCenteredOffset + MAX_LOOKAHEAD_CHARS * charWidthPx;
+      const minAllowed = STRIP_PADDING_PX - viewport.clientWidth * CARET_RATIO;
+      if (scrollOffsetPx > maxAllowed) scrollOffsetPx = maxAllowed;
+      if (scrollOffsetPx < minAllowed) scrollOffsetPx = minAllowed;
 
-  statsBar.classList.add('hidden');
-  showScreen(screenResults);
-}
+      strip.style.transform = `translate(${-scrollOffsetPx}px, -50%)`;
+    }
 
-// ---- Buttons ----
-document.getElementById('btn-retry').addEventListener('click', startGame);
-document.getElementById('btn-new').addEventListener('click', loadReady);
+    updateStats();
+    rafId = requestAnimationFrame(tick);
+  }
 
-modeButtons.forEach(btn => {
-  btn.addEventListener('click', () => {
-    modeButtons.forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    mode = btn.dataset.mode;
-    loadReady();
+  function handleKey(e) {
+    if (finished) return;
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (document.activeElement !== viewport) return;
+
+    if (e.key === "Backspace") {
+      e.preventDefault();
+      if (caretIndex === 0) return;
+      // Move caret back; clear error/done state on the previous index.
+      caretIndex--;
+      const prev = chars[caretIndex];
+      if (errorPositions.has(caretIndex)) {
+        errorPositions.delete(caretIndex);
+      } else {
+        // It was a correct char being undone — decrement correct count.
+        correctChars = Math.max(0, correctChars - 1);
+      }
+      prev.classList.remove("done", "err");
+      // Clear cur from whatever currently has it, mark prev as cur.
+      const oldCur = strip.querySelector(".ch.cur");
+      if (oldCur) oldCur.classList.remove("cur");
+      prev.classList.add("cur");
+      return;
+    }
+
+    // Only consume single printable characters.
+    if (e.key.length !== 1) return;
+    e.preventDefault();
+
+    if (caretIndex >= passage.length) return;
+
+    if (!startTimeMs) startTimeMs = performance.now();
+
+    const expected = passage[caretIndex];
+    const span = chars[caretIndex];
+    const correct = e.key === expected;
+
+    span.classList.remove("cur");
+    totalKeystrokes++;
+    keystrokeLog.push({ t: performance.now(), correct });
+
+    if (correct) {
+      span.classList.add("done");
+      correctChars++;
+    } else {
+      span.classList.add("err");
+      errorPositions.add(caretIndex);
+    }
+
+    caretIndex++;
+
+    if (caretIndex < passage.length) {
+      chars[caretIndex].classList.add("cur");
+    } else {
+      finishPassage();
+    }
+  }
+
+  function finishPassage() {
+    finished = true;
+    cancelAnimationFrame(rafId);
+    const ms = elapsedMs();
+    const wpm = (correctChars / 5) / (ms / 60000);
+    const acc = accuracy();
+
+    const result = {
+      timestamp: new Date().toISOString(),
+      passageId: passageIdx,
+      wpm: Math.round(wpm * 10) / 10,
+      accuracy: Math.round(acc * 1000) / 1000,
+      durationMs: Math.round(ms),
+    };
+    saveResult(result);
+
+    rWpm.textContent = String(Math.round(wpm));
+    rAcc.textContent = `${Math.round(acc * 100)}%`;
+    rTime.textContent = `${(ms / 1000).toFixed(1)}s`;
+    modal.classList.remove("hidden");
+  }
+
+  function saveResult(r) {
+    let existing = [];
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) existing = JSON.parse(raw);
+      if (!Array.isArray(existing)) existing = [];
+    } catch {
+      existing = [];
+    }
+    existing.push(r);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
+  }
+
+  function loadResults() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function exportResults() {
+    const results = loadResults();
+    const lines = [
+      "Scroll Typer — Results Export",
+      `Generated: ${new Date().toISOString()}`,
+      `Total runs: ${results.length}`,
+      "",
+      "timestamp\tpassage\twpm\taccuracy\tduration_s",
+    ];
+    for (const r of results) {
+      lines.push(
+        `${r.timestamp}\t${r.passageId + 1}\t${r.wpm}\t${(r.accuracy * 100).toFixed(1)}%\t${(r.durationMs / 1000).toFixed(1)}`
+      );
+    }
+    const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `typing-results-${new Date().toISOString().slice(0, 10)}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // Wire events
+  window.addEventListener("keydown", handleKey);
+  viewport.addEventListener("click", () => viewport.focus());
+  restartBtn.addEventListener("click", () => loadPassage(passageIdx));
+  nextBtn.addEventListener("click", () => loadPassage(passageIdx + 1));
+  exportBtn.addEventListener("click", exportResults);
+  rNext.addEventListener("click", () => {
+    modal.classList.add("hidden");
+    loadPassage(passageIdx + 1);
   });
-});
+  rClose.addEventListener("click", () => modal.classList.add("hidden"));
 
-// Click on ready passage to start
-passageDisplay.addEventListener('click', startGame);
-
-// ---- Global keyboard shortcuts ----
-document.addEventListener('keydown', e => {
-  if (screenTyping.classList.contains('active')) {
-    // Keep focus on input
-    if (document.activeElement !== typingInput) typingInput.focus();
-    return;
-  }
-
-  if (screenResults.classList.contains('active')) {
-    if (e.key === 'Tab') { e.preventDefault(); startGame(); }
-    if (e.key === 'Enter') { e.preventDefault(); loadReady(); }
-    return;
-  }
-
-  if (screenReady.classList.contains('active')) {
-    if (e.key === 'Enter') { e.preventDefault(); startGame(); }
-  }
-});
-
-// ---- Boot ----
-loadReady();
+  // Boot
+  loadPassage(0);
+})();
