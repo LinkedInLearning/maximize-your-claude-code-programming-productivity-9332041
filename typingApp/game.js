@@ -16,8 +16,15 @@
   const passageNumEl = document.getElementById("passage-num");
   const restartBtn = document.getElementById("restart");
   const nextBtn = document.getElementById("next");
-  const exportBtn = document.getElementById("export");
+  const historyBtn = document.getElementById("history");
+  const leaderboardBtn = document.getElementById("leaderboard");
   const modal = document.getElementById("results-modal");
+  const historyModal = document.getElementById("history-modal");
+  const historyBody = document.getElementById("history-body");
+  const historyClose = document.getElementById("history-close");
+  const leaderboardModal = document.getElementById("leaderboard-modal");
+  const leaderboardBody = document.getElementById("leaderboard-body");
+  const leaderboardClose = document.getElementById("leaderboard-close");
   const rWpm = document.getElementById("r-wpm");
   const rAcc = document.getElementById("r-acc");
   const rTime = document.getElementById("r-time");
@@ -255,8 +262,45 @@
   viewport.addEventListener("click", () => viewport.focus());
   restartBtn.addEventListener("click", restartCurrent);
   nextBtn.addEventListener("click", () => loadNextPassage().catch(reportError));
-  exportBtn.disabled = true;
-  exportBtn.title = "Replaced by History/Leaderboard in next step";
+  historyBtn.addEventListener("click", () => showHistory().catch(reportError));
+  leaderboardBtn.addEventListener("click", () => showLeaderboard().catch(reportError));
+  historyClose.addEventListener("click", () => historyModal.classList.add("hidden"));
+  leaderboardClose.addEventListener("click", () => leaderboardModal.classList.add("hidden"));
+
+  function fmtTime(iso) {
+    try { return new Date(iso).toLocaleString(); } catch { return iso; }
+  }
+
+  async function showHistory() {
+    if (!player) return;
+    const rows = await window.API.fetchMyResults(player.id);
+    historyBody.innerHTML = "";
+    if (!rows.length) {
+      historyBody.innerHTML = `<tr><td class="empty" colspan="4">No runs yet — finish a passage!</td></tr>`;
+    } else {
+      for (const r of rows) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${fmtTime(r.created_at)}</td><td>#${r.passage_id}</td><td class="num">${r.wpm.toFixed(1)}</td><td class="num">${(r.accuracy * 100).toFixed(0)}%</td>`;
+        historyBody.appendChild(tr);
+      }
+    }
+    historyModal.classList.remove("hidden");
+  }
+
+  async function showLeaderboard() {
+    const rows = await window.API.fetchLeaderboard();
+    leaderboardBody.innerHTML = "";
+    if (!rows.length) {
+      leaderboardBody.innerHTML = `<tr><td class="empty" colspan="5">No qualifying runs yet.</td></tr>`;
+    } else {
+      rows.forEach((r, i) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${i + 1}</td><td>${r.user_name}</td><td>#${r.passage_id}</td><td class="num">${r.wpm.toFixed(1)}</td><td class="num">${(r.accuracy * 100).toFixed(0)}%</td>`;
+        leaderboardBody.appendChild(tr);
+      });
+    }
+    leaderboardModal.classList.remove("hidden");
+  }
   rNext.addEventListener("click", () => {
     modal.classList.add("hidden");
     loadNextPassage().catch(reportError);

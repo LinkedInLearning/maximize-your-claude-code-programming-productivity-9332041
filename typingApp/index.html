@@ -26,7 +26,8 @@
       <div class="controls">
         <button id="restart">Restart</button>
         <button id="next">Next passage</button>
-        <button id="export">Export results</button>
+        <button id="history">My history</button>
+        <button id="leaderboard">Leaderboard</button>
       </div>
     </main>
 
@@ -39,6 +40,26 @@
         <div class="modal-actions">
           <button id="r-next">Next passage</button>
           <button id="r-close">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="history-modal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <h2>Your recent runs</h2>
+        <table class="data-table"><thead><tr><th>When</th><th>Passage</th><th>WPM</th><th>Acc</th></tr></thead><tbody id="history-body"></tbody></table>
+        <div class="modal-actions">
+          <button id="history-close">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="leaderboard-modal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <h2>Leaderboard (top WPM, accuracy ≥ 90%)</h2>
+        <table class="data-table"><thead><tr><th>#</th><th>Player</th><th>Passage</th><th>WPM</th><th>Acc</th></tr></thead><tbody id="leaderboard-body"></tbody></table>
+        <div class="modal-actions">
+          <button id="leaderboard-close">Close</button>
         </div>
       </div>
     </div>
