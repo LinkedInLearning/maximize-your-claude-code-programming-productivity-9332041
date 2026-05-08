@@ -1,7 +1,6 @@
 (() => {
   "use strict";
 
-  const STORAGE_KEY = "typingapp.results";
   const PLAYER_KEY = "typingapp.player";
   const MIN_WPM = 60;
   const CARET_RATIO = 0.5; // matches .caret-marker left: 50%
@@ -235,14 +234,15 @@
     const wpm = (correctChars / 5) / (ms / 60000);
     const acc = accuracy();
 
-    const result = {
-      timestamp: new Date().toISOString(),
-      passageId: currentPassage ? currentPassage.id : null,
-      wpm: Math.round(wpm * 10) / 10,
-      accuracy: Math.round(acc * 1000) / 1000,
-      durationMs: Math.round(ms),
-    };
-    saveResult(result);
+    if (player && currentPassage) {
+      window.API.saveResult({
+        user_id: player.id,
+        passage_id: currentPassage.id,
+        wpm: Math.round(wpm * 10) / 10,
+        accuracy: Math.round(acc * 1000) / 1000,
+        duration_ms: Math.round(ms),
+      }).catch(reportError);
+    }
 
     rWpm.textContent = String(Math.round(wpm));
     rAcc.textContent = `${Math.round(acc * 100)}%`;
@@ -250,60 +250,13 @@
     modal.classList.remove("hidden");
   }
 
-  function saveResult(r) {
-    let existing = [];
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) existing = JSON.parse(raw);
-      if (!Array.isArray(existing)) existing = [];
-    } catch {
-      existing = [];
-    }
-    existing.push(r);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
-  }
-
-  function loadResults() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      const arr = raw ? JSON.parse(raw) : [];
-      return Array.isArray(arr) ? arr : [];
-    } catch {
-      return [];
-    }
-  }
-
-  function exportResults() {
-    const results = loadResults();
-    const lines = [
-      "Scroll Typer — Results Export",
-      `Generated: ${new Date().toISOString()}`,
-      `Total runs: ${results.length}`,
-      "",
-      "timestamp\tpassage\twpm\taccuracy\tduration_s",
-    ];
-    for (const r of results) {
-      lines.push(
-        `${r.timestamp}\t${r.passageId}\t${r.wpm}\t${(r.accuracy * 100).toFixed(1)}%\t${(r.durationMs / 1000).toFixed(1)}`
-      );
-    }
-    const blob = new Blob([lines.join("\n")], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `typing-results-${new Date().toISOString().slice(0, 10)}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
-
   // Wire events
   window.addEventListener("keydown", handleKey);
   viewport.addEventListener("click", () => viewport.focus());
   restartBtn.addEventListener("click", restartCurrent);
   nextBtn.addEventListener("click", () => loadNextPassage().catch(reportError));
-  exportBtn.addEventListener("click", exportResults);
+  exportBtn.disabled = true;
+  exportBtn.title = "Replaced by History/Leaderboard in next step";
   rNext.addEventListener("click", () => {
     modal.classList.add("hidden");
     loadNextPassage().catch(reportError);
