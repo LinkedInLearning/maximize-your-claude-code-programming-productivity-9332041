@@ -1,0 +1,62 @@
+[
+  {
+    "slug": "receipt_01",
+    "pdf": "receipt_01.pdf",
+    "png": "receipt_01.png",
+    "truth": "receipt_01.truth.json"
+  },
+  {
+    "slug": "receipt_02",
+    "pdf": "receipt_02.pdf",
+    "png": "receipt_02.png",
+    "truth": "receipt_02.truth.json"
+  },
+  {
+    "slug": "receipt_03",
+    "pdf": "receipt_03.pdf",
+    "png": "receipt_03.png",
+    "truth": "receipt_03.truth.json"
+  },
+  {
+    "slug": "receipt_04",
+    "pdf": "receipt_04.pdf",
+    "png": "receipt_04.png",
+    "truth": "receipt_04.truth.json"
+  },
+  {
+    "slug": "receipt_05",
+    "pdf": "receipt_05.pdf",
+    "png": "receipt_05.png",
+    "truth": "receipt_05.truth.json"
+  },
+  {
+    "slug": "receipt_06",
+    "pdf": "receipt_06.pdf",
+    "png": "receipt_06.png",
+    "truth": "receipt_06.truth.json"
+  },
+  {
+    "slug": "receipt_07",
+    "pdf": "receipt_07.pdf",
+    "png": "receipt_07.png",
+    "truth": "receipt_07.truth.json"
+  },
+  {
+    "slug": "receipt_08",
+    "pdf": "receipt_08.pdf",
+    "png": "receipt_08.png",
+    "truth": "receipt_08.truth.json"
+  },
+  {
+    "slug": "receipt_09",
+    "pdf": "receipt_09.pdf",
+    "png": "receipt_09.png",
+    "truth": "receipt_09.truth.json"
+  },
+  {
+    "slug": "receipt_10",
+    "pdf": "receipt_10.pdf",
+    "png": "receipt_10.png",
+    "truth": "receipt_10.truth.json"
+  }
+]

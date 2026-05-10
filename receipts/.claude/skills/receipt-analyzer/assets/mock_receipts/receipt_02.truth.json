@@ -1,0 +1,24 @@
+{
+  "store": "Brewpoint Coffee",
+  "date": "2026-02-08",
+  "receipt_id": "R1001-617",
+  "items": [
+    {
+      "name": "Bagel + Cream Cheese",
+      "qty": 1,
+      "unit_price": 4.5,
+      "line_total": 4.5
+    },
+    {
+      "name": "Croissant",
+      "qty": 1,
+      "unit_price": 3.95,
+      "line_total": 3.95
+    }
+  ],
+  "subtotal": 8.45,
+  "tax_rate": 0.101,
+  "tax": 0.85,
+  "tip": 1.27,
+  "total": 10.57
+}

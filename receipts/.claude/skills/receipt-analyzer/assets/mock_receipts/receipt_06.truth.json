@@ -1,0 +1,42 @@
+{
+  "store": "Hammer & Nail Hardware",
+  "date": "2026-02-28",
+  "receipt_id": "R1005-203",
+  "items": [
+    {
+      "name": "2x4 Stud 8ft",
+      "qty": 1,
+      "unit_price": 4.49,
+      "line_total": 4.49
+    },
+    {
+      "name": "Paint Roller",
+      "qty": 1,
+      "unit_price": 6.49,
+      "line_total": 6.49
+    },
+    {
+      "name": "Latex Paint Gallon",
+      "qty": 2,
+      "unit_price": 32.99,
+      "line_total": 65.98
+    },
+    {
+      "name": "Box Drywall Screws",
+      "qty": 3,
+      "unit_price": 8.99,
+      "line_total": 26.97
+    },
+    {
+      "name": "Painters Tape",
+      "qty": 1,
+      "unit_price": 5.49,
+      "line_total": 5.49
+    }
+  ],
+  "subtotal": 109.42,
+  "tax_rate": 0.0775,
+  "tax": 8.48,
+  "tip": 0.0,
+  "total": 117.9
+}

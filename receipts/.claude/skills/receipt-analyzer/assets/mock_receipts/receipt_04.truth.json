@@ -1,0 +1,24 @@
+{
+  "store": "ShellPoint Gas",
+  "date": "2026-03-05",
+  "receipt_id": "R1003-320",
+  "items": [
+    {
+      "name": "Premium (gal)",
+      "qty": 4,
+      "unit_price": 5.099,
+      "line_total": 20.4
+    },
+    {
+      "name": "Snickers Bar",
+      "qty": 3,
+      "unit_price": 1.99,
+      "line_total": 5.97
+    }
+  ],
+  "subtotal": 26.37,
+  "tax_rate": 0.0,
+  "tax": 0.0,
+  "tip": 0.0,
+  "total": 26.37
+}

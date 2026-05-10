@@ -1,0 +1,24 @@
+{
+  "store": "Trattoria Luna",
+  "date": "2026-05-09",
+  "receipt_id": "R1002-928",
+  "items": [
+    {
+      "name": "Sparkling Water",
+      "qty": 4,
+      "unit_price": 4.0,
+      "line_total": 16.0
+    },
+    {
+      "name": "Caesar Salad",
+      "qty": 2,
+      "unit_price": 12.5,
+      "line_total": 25.0
+    }
+  ],
+  "subtotal": 41.0,
+  "tax_rate": 0.08875,
+  "tax": 3.64,
+  "tip": 7.38,
+  "total": 52.02
+}
