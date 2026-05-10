@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Simple Calendar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-secondary: #f5f5f5;
+    --border: #d9d9d9;
+    --text: #1e1e1e;
+    --text-secondary: #757575;
+    --text-disabled: #b3b3b3;
+    --brand-bg: #2c2c2c;
+    --brand-on: #f5f5f5;
+    --radius-lg: 16px;
+    --radius-md: 8px;
+    --space-2: 8px;
+    --space-3: 6px;
+    --space-4: 16px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    height: 100%;
+    font-family: "Inter", system-ui, -apple-system, sans-serif;
+    color: var(--text);
+    background: #fafafa;
+  }
+
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .calendar {
+    width: 318px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .header {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: var(--space-4);
+  }
+
+  .icon-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 32px;
+    border: none;
+    background: transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text);
+    padding: 0;
+  }
+  .icon-btn:hover { background: var(--bg-secondary); }
+  .icon-btn svg { width: 20px; height: 20px; }
+
+  .selects {
+    flex: 1;
+    display: flex;
+    gap: var(--space-2);
+  }
+
+  .select {
+    flex: 1;
+    position: relative;
+  }
+  .select select {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: var(--space-3) 28px var(--space-3) var(--space-3);
+    font: inherit;
+    font-size: 16px;
+    color: var(--text);
+    line-height: 1;
+    cursor: pointer;
+  }
+  .select::after {
+    content: "";
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    width: 8px;
+    height: 8px;
+    border-right: 1.6px solid var(--text);
+    border-bottom: 1.6px solid var(--text);
+    transform: translateY(-75%) rotate(45deg);
+    pointer-events: none;
+  }
+
+  .table {
+    padding-top: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(7, 40px);
+    gap: 1px;
+  }
+
+  .dow {
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 20px;
+  }
+
+  .day {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+    background: transparent;
+    border: none;
+    font: inherit;
+    font-size: 16px;
+    color: var(--text);
+    cursor: pointer;
+    padding: 0;
+  }
+  .day:hover:not(.empty):not(.selected) { background: var(--bg-secondary); }
+  .day.muted { color: var(--text-disabled); }
+  .day.in-range { background: var(--bg-secondary); color: var(--brand-bg); }
+  .day.selected { background: var(--brand-bg); color: var(--brand-on); }
+  .day.empty { cursor: default; }
+</style>
+</head>
+<body>
+  <div class="calendar" role="application" aria-label="Calendar">
+    <div class="header">
+      <button class="icon-btn" id="prev" aria-label="Previous month">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="12,5 7,10 12,15"/></svg>
+      </button>
+      <div class="selects">
+        <div class="select">
+          <select id="month" aria-label="Month"></select>
+        </div>
+        <div class="select">
+          <select id="year" aria-label="Year"></select>
+        </div>
+      </div>
+      <button class="icon-btn" id="next" aria-label="Next month">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="8,5 13,10 8,15"/></svg>
+      </button>
+    </div>
+
+    <div class="table">
+      <div class="grid" id="dow"></div>
+      <div class="grid" id="days" style="margin-top:1px"></div>
+    </div>
+  </div>
+
+<script>
+  const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const DOW = ["Su","Mo","Tu","We","Th","Fr","Sa"];
+
+  const state = {
+    view: { year: 2025, month: 8 }, // Sep 2025
+    range: { start: new Date(2025, 8, 9), end: new Date(2025, 8, 13) },
+    pickingEnd: false,
+  };
+
+  const monthSel = document.getElementById("month");
+  const yearSel = document.getElementById("year");
+  const dowEl = document.getElementById("dow");
+  const daysEl = document.getElementById("days");
+
+  MONTHS.forEach((m, i) => {
+    const o = document.createElement("option");
+    o.value = i; o.textContent = m;
+    monthSel.appendChild(o);
+  });
+  for (let y = 2020; y <= 2035; y++) {
+    const o = document.createElement("option");
+    o.value = y; o.textContent = y;
+    yearSel.appendChild(o);
+  }
+  DOW.forEach(d => {
+    const c = document.createElement("div");
+    c.className = "dow"; c.textContent = d;
+    dowEl.appendChild(c);
+  });
+
+  function sameDay(a, b) {
+    return a && b && a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+  }
+  function inRange(d) {
+    const { start, end } = state.range;
+    if (!start || !end) return false;
+    const lo = start <= end ? start : end;
+    const hi = start <= end ? end : start;
+    return d > lo && d < hi;
+  }
+  function isEndpoint(d) {
+    return sameDay(d, state.range.start) || sameDay(d, state.range.end);
+  }
+
+  function render() {
+    monthSel.value = state.view.month;
+    yearSel.value = state.view.year;
+
+    daysEl.innerHTML = "";
+    const first = new Date(state.view.year, state.view.month, 1);
+    const startDow = first.getDay(); // 0=Sun
+    const daysInMonth = new Date(state.view.year, state.view.month + 1, 0).getDate();
+    const daysInPrev = new Date(state.view.year, state.view.month, 0).getDate();
+
+    const cells = [];
+    for (let i = 0; i < startDow; i++) {
+      const dayNum = daysInPrev - startDow + 1 + i;
+      const d = new Date(state.view.year, state.view.month - 1, dayNum);
+      cells.push({ d, muted: true });
+    }
+    for (let i = 1; i <= daysInMonth; i++) {
+      cells.push({ d: new Date(state.view.year, state.view.month, i), muted: false });
+    }
+    while (cells.length % 7 !== 0) {
+      const last = cells[cells.length - 1].d;
+      const next = new Date(last); next.setDate(last.getDate() + 1);
+      cells.push({ d: next, muted: true });
+    }
+
+    cells.forEach(({ d, muted }) => {
+      const btn = document.createElement("button");
+      btn.className = "day";
+      btn.textContent = d.getDate();
+      if (muted) btn.classList.add("muted");
+      if (!muted) {
+        if (isEndpoint(d)) btn.classList.add("selected");
+        else if (inRange(d)) btn.classList.add("in-range");
+      }
+      btn.addEventListener("click", () => {
+        if (muted) {
+          state.view = { year: d.getFullYear(), month: d.getMonth() };
+          render();
+          return;
+        }
+        if (!state.pickingEnd) {
+          state.range = { start: d, end: null };
+          state.pickingEnd = true;
+        } else {
+          state.range.end = d;
+          if (state.range.end < state.range.start) {
+            state.range = { start: state.range.end, end: state.range.start };
+          }
+          state.pickingEnd = false;
+        }
+        render();
+      });
+      daysEl.appendChild(btn);
+    });
+  }
+
+  document.getElementById("prev").addEventListener("click", () => {
+    const m = state.view.month - 1;
+    if (m < 0) state.view = { year: state.view.year - 1, month: 11 };
+    else state.view.month = m;
+    render();
+  });
+  document.getElementById("next").addEventListener("click", () => {
+    const m = state.view.month + 1;
+    if (m > 11) state.view = { year: state.view.year + 1, month: 0 };
+    else state.view.month = m;
+    render();
+  });
+  monthSel.addEventListener("change", e => { state.view.month = +e.target.value; render(); });
+  yearSel.addEventListener("change", e => { state.view.year = +e.target.value; render(); });
+
+  render();
+</script>
+</body>
+</html>

@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Calendar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #faf9f5;
+    --bg-secondary: #e8e6dc;
+    --border: #e8e6dc;
+    --text: #141413;
+    --text-secondary: #b0aea5;
+    --text-disabled: #b0aea5;
+    --brand-bg: #141413;
+    --brand-on: #faf9f5;
+    --accent: #d97757;
+    --radius-lg: 16px;
+    --radius-md: 8px;
+    --space-2: 8px;
+    --space-3: 6px;
+    --space-4: 16px;
+    --font-heading: "Poppins", Arial, sans-serif;
+    --font-body: "Lora", Georgia, serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    height: 100%;
+    font-family: var(--font-body);
+    color: var(--text);
+    background: var(--bg);
+  }
+
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .calendar {
+    width: 318px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 1px 2px rgba(20, 20, 19, 0.04);
+  }
+
+  .header {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: var(--space-4);
+  }
+
+  .icon-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 32px;
+    border: none;
+    background: transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text);
+    padding: 0;
+    transition: background 120ms ease, color 120ms ease;
+  }
+  .icon-btn:hover { background: var(--bg-secondary); color: var(--accent); }
+  .icon-btn svg { width: 20px; height: 20px; }
+
+  .selects {
+    flex: 1;
+    display: flex;
+    gap: var(--space-2);
+  }
+
+  .select {
+    flex: 1;
+    position: relative;
+  }
+  .select select {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: var(--space-3) 28px var(--space-3) var(--space-3);
+    font-family: var(--font-heading);
+    font-weight: 500;
+    font-size: 15px;
+    color: var(--text);
+    line-height: 1;
+    cursor: pointer;
+  }
+  .select select:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+    border-color: var(--accent);
+  }
+  .select::after {
+    content: "";
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    width: 8px;
+    height: 8px;
+    border-right: 1.6px solid var(--text);
+    border-bottom: 1.6px solid var(--text);
+    transform: translateY(-75%) rotate(45deg);
+    pointer-events: none;
+  }
+
+  .table {
+    padding-top: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(7, 40px);
+    gap: 1px;
+  }
+
+  .dow {
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    font-family: var(--font-heading);
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    line-height: 22px;
+  }
+
+  .day {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+    background: transparent;
+    border: 1.5px solid transparent;
+    font-family: var(--font-body);
+    font-size: 15px;
+    color: var(--text);
+    cursor: pointer;
+    padding: 0;
+    transition: background 120ms ease, color 120ms ease;
+  }
+  .day:hover:not(.empty):not(.selected) { background: var(--bg-secondary); }
+  .day.muted { color: var(--text-disabled); }
+  .day.in-range { background: var(--bg-secondary); color: var(--brand-bg); }
+  .day.selected { background: var(--brand-bg); color: var(--brand-on); }
+  .day.today { border-color: var(--accent); }
+  .day.today.selected { border-color: var(--accent); }
+  .day.empty { cursor: default; }
+</style>
+</head>
+<body>
+  <div class="calendar" role="application" aria-label="Calendar">
+    <div class="header">
+      <button class="icon-btn" id="prev" aria-label="Previous month">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="12,5 7,10 12,15"/></svg>
+      </button>
+      <div class="selects">
+        <div class="select">
+          <select id="month" aria-label="Month"></select>
+        </div>
+        <div class="select">
+          <select id="year" aria-label="Year"></select>
+        </div>
+      </div>
+      <button class="icon-btn" id="next" aria-label="Next month">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="8,5 13,10 8,15"/></svg>
+      </button>
+    </div>
+
+    <div class="table">
+      <div class="grid" id="dow"></div>
+      <div class="grid" id="days" style="margin-top:1px"></div>
+    </div>
+  </div>
+
+<script>
+  const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const DOW = ["Su","Mo","Tu","We","Th","Fr","Sa"];
+
+  const today = new Date();
+  const state = {
+    view: { year: today.getFullYear(), month: today.getMonth() },
+    range: { start: null, end: null },
+    pickingEnd: false,
+  };
+
+  const monthSel = document.getElementById("month");
+  const yearSel = document.getElementById("year");
+  const dowEl = document.getElementById("dow");
+  const daysEl = document.getElementById("days");
+
+  MONTHS.forEach((m, i) => {
+    const o = document.createElement("option");
+    o.value = i; o.textContent = m;
+    monthSel.appendChild(o);
+  });
+  for (let y = 2020; y <= 2035; y++) {
+    const o = document.createElement("option");
+    o.value = y; o.textContent = y;
+    yearSel.appendChild(o);
+  }
+  DOW.forEach(d => {
+    const c = document.createElement("div");
+    c.className = "dow"; c.textContent = d;
+    dowEl.appendChild(c);
+  });
+
+  function sameDay(a, b) {
+    return a && b && a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+  }
+  function inRange(d) {
+    const { start, end } = state.range;
+    if (!start || !end) return false;
+    const lo = start <= end ? start : end;
+    const hi = start <= end ? end : start;
+    return d > lo && d < hi;
+  }
+  function isEndpoint(d) {
+    return sameDay(d, state.range.start) || sameDay(d, state.range.end);
+  }
+
+  function render() {
+    monthSel.value = state.view.month;
+    yearSel.value = state.view.year;
+
+    daysEl.innerHTML = "";
+    const first = new Date(state.view.year, state.view.month, 1);
+    const startDow = first.getDay();
+    const daysInMonth = new Date(state.view.year, state.view.month + 1, 0).getDate();
+    const daysInPrev = new Date(state.view.year, state.view.month, 0).getDate();
+
+    const cells = [];
+    for (let i = 0; i < startDow; i++) {
+      const dayNum = daysInPrev - startDow + 1 + i;
+      const d = new Date(state.view.year, state.view.month - 1, dayNum);
+      cells.push({ d, muted: true });
+    }
+    for (let i = 1; i <= daysInMonth; i++) {
+      cells.push({ d: new Date(state.view.year, state.view.month, i), muted: false });
+    }
+    while (cells.length % 7 !== 0) {
+      const last = cells[cells.length - 1].d;
+      const next = new Date(last); next.setDate(last.getDate() + 1);
+      cells.push({ d: next, muted: true });
+    }
+
+    cells.forEach(({ d, muted }) => {
+      const btn = document.createElement("button");
+      btn.className = "day";
+      btn.textContent = d.getDate();
+      if (muted) btn.classList.add("muted");
+      if (!muted) {
+        if (sameDay(d, today)) btn.classList.add("today");
+        if (isEndpoint(d)) btn.classList.add("selected");
+        else if (inRange(d)) btn.classList.add("in-range");
+      }
+      btn.addEventListener("click", () => {
+        if (muted) {
+          state.view = { year: d.getFullYear(), month: d.getMonth() };
+          render();
+          return;
+        }
+        if (!state.pickingEnd) {
+          state.range = { start: d, end: null };
+          state.pickingEnd = true;
+        } else {
+          state.range.end = d;
+          if (state.range.end < state.range.start) {
+            state.range = { start: state.range.end, end: state.range.start };
+          }
+          state.pickingEnd = false;
+        }
+        render();
+      });
+      daysEl.appendChild(btn);
+    });
+  }
+
+  document.getElementById("prev").addEventListener("click", () => {
+    const m = state.view.month - 1;
+    if (m < 0) state.view = { year: state.view.year - 1, month: 11 };
+    else state.view.month = m;
+    render();
+  });
+  document.getElementById("next").addEventListener("click", () => {
+    const m = state.view.month + 1;
+    if (m > 11) state.view = { year: state.view.year + 1, month: 0 };
+    else state.view.month = m;
+    render();
+  });
+  monthSel.addEventListener("change", e => { state.view.month = +e.target.value; render(); });
+  yearSel.addEventListener("change", e => { state.view.year = +e.target.value; render(); });
+
+  render();
+</script>
+</body>
+</html>
