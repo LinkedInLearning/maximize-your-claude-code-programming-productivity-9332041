@@ -2,17 +2,18 @@
 
 ## Summary
 
-_A high-level description of what is being built — the product, its purpose, target users, and the problem it solves._
+Create a simple hello world application using fastapi
 
 ---
 
 ## Features
 
-### Feature Name
+### Welcome page
 
-**Summary:** _A short description of what this feature does and why it exists._
+**Summary:** It should be a white background with a blue font (#0000FF) for hello world
 
 **Verification Criteria:**
-- _Observable behavior or outcome that confirms the feature works_
-- _Edge cases that must be handled correctly_
-- _Acceptance test or scenario_
+- The fast api server starts
+- At localhost:3000/ we see "hello world"
+- It should be centered
+- Verify using a screenshot of the app

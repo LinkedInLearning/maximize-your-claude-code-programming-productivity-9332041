@@ -2,24 +2,24 @@
 
 ## Performance
 
-_Latency, throughput, response time targets._
+5ms page startup time
 
 ## Security
 
-_Authentication, authorization, data protection, threat model._
+No login, but start uvicorn in a secure way
 
 ## Reliability
 
-_Availability targets, fault tolerance, recovery objectives._
+One instance
 
 ## Scalability
 
-_Expected load, growth assumptions, scaling strategy._
+A local application, so we only need one request at a time, but in the future we want to handle 10+ QPS
 
 ## Usability
 
-_Accessibility, user experience requirements._
+See relevant standards
 
 ## Maintainability
 
-_Code quality, observability, deployability requirements._
+Use google standards for python documentation

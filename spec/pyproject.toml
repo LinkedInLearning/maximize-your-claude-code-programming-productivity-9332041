@@ -1,0 +1,23 @@
+[project]
+name = "hello-world-fastapi"
+version = "0.1.0"
+description = "Hello world FastAPI app"
+requires-python = ">=3.9"
+dependencies = [
+  "fastapi>=0.110",
+  "uvicorn[standard]>=0.27",
+]
+
+[project.optional-dependencies]
+test = [
+  "pytest>=8",
+  "pytest-playwright>=0.5",
+  "httpx>=0.27",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]

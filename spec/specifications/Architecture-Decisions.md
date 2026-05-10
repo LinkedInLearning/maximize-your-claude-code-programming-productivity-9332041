@@ -4,15 +4,15 @@ A log of significant architectural decisions made during this project. Each entr
 
 ---
 
-## ADR-001: _Decision Title_
+## ADR-001: HTML Page + Fast API server
 
-**Status:** Proposed | Accepted | Deprecated | Superseded
+**Status:** Accepted
 
 **Context:**
-_What is the issue motivating this decision? What forces are at play?_
+We want a basic webserver to show our application
 
 **Decision:**
-_What is the change being proposed or adopted?_
+Accepted, host with Uvicorn
 
 **Consequences:**
-_What becomes easier or harder as a result? What are the trade-offs?_
+Basic app to start
