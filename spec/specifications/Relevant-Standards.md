@@ -4,12 +4,12 @@ Standards, specifications, and conventions this project must adhere to or intero
 
 ## Industry Standards
 
-- Make the UI accessible, make sure you WCAG 2 compliant
+- _e.g. RFC 7519 (JWT), OAuth 2.1, OpenAPI 3.1_
 
 ## Internal Standards
 
-- N/A
+- _Org-specific style guides, coding conventions, design system rules_
 
 ## Compliance & Regulations
 
-- N/A
+- _e.g. GDPR, SOC 2, HIPAA, accessibility (WCAG 2.2)_
