@@ -1,0 +1,3 @@
+date,year_month,store,category,receipt_id,item,qty,unit_price,line_total,tax,tip,total,source_pdf
+2026-03-05,2026-03,ShellPoint Gas,Gas,R1003-320,Premium (gal),4,5.10,20.40,0.00,0.00,26.37,receipt_04.pdf
+2026-03-05,2026-03,ShellPoint Gas,Gas,R1003-320,Snickers Bar,3,1.99,5.97,0.00,0.00,26.37,receipt_04.pdf

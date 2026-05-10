@@ -1,0 +1,31 @@
+{
+  "store": "Pacific Threads",
+  "address": "550 Ocean Blvd, San Diego CA",
+  "date": "2026-05-13",
+  "receipt_id": "R1009-470",
+  "items": [
+    {
+      "name": "Denim Jeans",
+      "qty": 2,
+      "unit_price": 68.0,
+      "line_total": 136.0
+    },
+    {
+      "name": "Canvas Tote",
+      "qty": 3,
+      "unit_price": 18.0,
+      "line_total": 54.0
+    },
+    {
+      "name": "Cotton T-Shirt",
+      "qty": 4,
+      "unit_price": 22.0,
+      "line_total": 88.0
+    }
+  ],
+  "subtotal": 278.0,
+  "tax_rate": 0.0775,
+  "tax": 21.54,
+  "tip": 0.0,
+  "total": 299.54
+}

@@ -1,0 +1,11 @@
+date,year_month,store,category,receipt_id,item,qty,unit_price,line_total,tax,tip,total,source_pdf
+2026-05-09,2026-05,Trattoria Luna,Restaurant,R1002-928,Sparkling Water,4,4.00,16.00,3.64,7.38,52.02,receipt_03.pdf
+2026-05-09,2026-05,Trattoria Luna,Restaurant,R1002-928,Caesar Salad,2,12.50,25.00,3.64,7.38,52.02,receipt_03.pdf
+2026-05-21,2026-05,Wellbridge Pharmacy,Pharmacy,R1006-275,Vitamin D3,3,12.99,38.97,5.34,0.00,90.72,receipt_07.pdf
+2026-05-21,2026-05,Wellbridge Pharmacy,Pharmacy,R1006-275,Toothpaste,3,4.99,14.97,5.34,0.00,90.72,receipt_07.pdf
+2026-05-21,2026-05,Wellbridge Pharmacy,Pharmacy,R1006-275,Hand Sanitizer 8oz,2,3.99,7.98,5.34,0.00,90.72,receipt_07.pdf
+2026-05-21,2026-05,Wellbridge Pharmacy,Pharmacy,R1006-275,Bandages 30ct,3,4.49,13.47,5.34,0.00,90.72,receipt_07.pdf
+2026-05-21,2026-05,Wellbridge Pharmacy,Pharmacy,R1006-275,Ibuprofen 200mg 100ct,1,9.99,9.99,5.34,0.00,90.72,receipt_07.pdf
+2026-05-13,2026-05,Pacific Threads,Clothing,R1009-470,Denim Jeans,2,68.00,136.00,21.54,0.00,299.54,receipt_10.pdf
+2026-05-13,2026-05,Pacific Threads,Clothing,R1009-470,Canvas Tote,3,18.00,54.00,21.54,0.00,299.54,receipt_10.pdf
+2026-05-13,2026-05,Pacific Threads,Clothing,R1009-470,Cotton T-Shirt,4,22.00,88.00,21.54,0.00,299.54,receipt_10.pdf

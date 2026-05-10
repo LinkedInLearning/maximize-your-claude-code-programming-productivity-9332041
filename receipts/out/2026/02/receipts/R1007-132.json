@@ -1,0 +1,37 @@
+{
+  "store": "Chapter House Books",
+  "address": "17 Library Ln, Cambridge MA",
+  "date": "2026-02-27",
+  "receipt_id": "R1007-132",
+  "items": [
+    {
+      "name": "Paperback Mystery",
+      "qty": 3,
+      "unit_price": 16.99,
+      "line_total": 50.97
+    },
+    {
+      "name": "Hardcover Novel",
+      "qty": 2,
+      "unit_price": 28.0,
+      "line_total": 56.0
+    },
+    {
+      "name": "Bookmark Set",
+      "qty": 3,
+      "unit_price": 5.99,
+      "line_total": 17.97
+    },
+    {
+      "name": "Cookbook",
+      "qty": 1,
+      "unit_price": 34.99,
+      "line_total": 34.99
+    }
+  ],
+  "subtotal": 159.93,
+  "tax_rate": 0.0625,
+  "tax": 10.0,
+  "tip": 0.0,
+  "total": 169.93
+}

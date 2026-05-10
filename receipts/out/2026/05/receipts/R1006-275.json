@@ -1,0 +1,43 @@
+{
+  "store": "Wellbridge Pharmacy",
+  "address": "55 Health Way, Boston MA",
+  "date": "2026-05-21",
+  "receipt_id": "R1006-275",
+  "items": [
+    {
+      "name": "Vitamin D3",
+      "qty": 3,
+      "unit_price": 12.99,
+      "line_total": 38.97
+    },
+    {
+      "name": "Toothpaste",
+      "qty": 3,
+      "unit_price": 4.99,
+      "line_total": 14.97
+    },
+    {
+      "name": "Hand Sanitizer 8oz",
+      "qty": 2,
+      "unit_price": 3.99,
+      "line_total": 7.98
+    },
+    {
+      "name": "Bandages 30ct",
+      "qty": 3,
+      "unit_price": 4.49,
+      "line_total": 13.47
+    },
+    {
+      "name": "Ibuprofen 200mg 100ct",
+      "qty": 1,
+      "unit_price": 9.99,
+      "line_total": 9.99
+    }
+  ],
+  "subtotal": 85.38,
+  "tax_rate": 0.0625,
+  "tax": 5.34,
+  "tip": 0.0,
+  "total": 90.72
+}

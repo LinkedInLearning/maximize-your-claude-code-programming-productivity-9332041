@@ -1,0 +1,31 @@
+{
+  "store": "Yellow Cab",
+  "address": "Receipt issued in vehicle",
+  "date": "2026-04-13",
+  "receipt_id": "R1008-758",
+  "items": [
+    {
+      "name": "Distance (mi)",
+      "qty": 2,
+      "unit_price": 2.85,
+      "line_total": 5.7
+    },
+    {
+      "name": "Wait Time (min)",
+      "qty": 3,
+      "unit_price": 0.5,
+      "line_total": 1.5
+    },
+    {
+      "name": "Base Fare",
+      "qty": 2,
+      "unit_price": 3.5,
+      "line_total": 7.0
+    }
+  ],
+  "subtotal": 14.2,
+  "tax_rate": 0.0,
+  "tax": 0.0,
+  "tip": 0.0,
+  "total": 14.2
+}

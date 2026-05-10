@@ -1,0 +1,118 @@
+{
+  "run_timestamp": "2026-05-09T18-32-00",
+  "inbox": "/Users/linkedin/Code/receipts/inbox",
+  "out": "/Users/linkedin/Code/receipts/out",
+  "received": 10,
+  "passed": 10,
+  "failed": 0,
+  "rows_appended_to_csv": 32,
+  "months_touched": [
+    "2026-02",
+    "2026-03",
+    "2026-04",
+    "2026-05"
+  ],
+  "uncategorized_stores": [],
+  "results": [
+    {
+      "source_pdf": "receipt_01.pdf",
+      "store": "Greenleaf Market",
+      "date": "2026-02-24",
+      "category": "Groceries",
+      "total": 12.38,
+      "passed": true,
+      "issues": [],
+      "year_month": "2026-02"
+    },
+    {
+      "source_pdf": "receipt_02.pdf",
+      "store": "Brewpoint Coffee",
+      "date": "2026-02-08",
+      "category": "Coffee",
+      "total": 10.57,
+      "passed": true,
+      "issues": [],
+      "year_month": "2026-02"
+    },
+    {
+      "source_pdf": "receipt_03.pdf",
+      "store": "Trattoria Luna",
+      "date": "2026-05-09",
+      "category": "Restaurant",
+      "total": 52.02,
+      "passed": true,
+      "issues": [],
+      "year_month": "2026-05"
+    },
+    {
+      "source_pdf": "receipt_04.pdf",
+      "store": "ShellPoint Gas",
+      "date": "2026-03-05",
+      "category": "Gas",
+      "total": 26.37,
+      "passed": true,
+      "issues": [],
+      "year_month": "2026-03"
+    },
+    {
+      "source_pdf": "receipt_05.pdf",
+      "store": "Volt Electronics",
+      "date": "2026-04-18",
+      "category": "Electronics",
+      "total": 292.17,
+      "passed": true,
+      "issues": [],
+      "year_month": "2026-04"
+    },
+    {
+      "source_pdf": "receipt_06.pdf",
+      "store": "Hammer & Nail Hardware",
+      "date": "2026-02-28",
+      "category": "Hardware",
+      "total": 117.9,
+      "passed": true,
+      "issues": [],
+      "year_month": "2026-02"
+    },
+    {
+      "source_pdf": "receipt_07.pdf",
+      "store": "Wellbridge Pharmacy",
+      "date": "2026-05-21",
+      "category": "Pharmacy",
+      "total": 90.72,
+      "passed": true,
+      "issues": [],
+      "year_month": "2026-05"
+    },
+    {
+      "source_pdf": "receipt_08.pdf",
+      "store": "Chapter House Books",
+      "date": "2026-02-27",
+      "category": "Books",
+      "total": 169.93,
+      "passed": true,
+      "issues": [],
+      "year_month": "2026-02"
+    },
+    {
+      "source_pdf": "receipt_09.pdf",
+      "store": "Yellow Cab",
+      "date": "2026-04-13",
+      "category": "Transit",
+      "total": 14.2,
+      "passed": true,
+      "issues": [],
+      "year_month": "2026-04"
+    },
+    {
+      "source_pdf": "receipt_10.pdf",
+      "store": "Pacific Threads",
+      "date": "2026-05-13",
+      "category": "Clothing",
+      "total": 299.54,
+      "passed": true,
+      "issues": [],
+      "year_month": "2026-05"
+    }
+  ]
+}

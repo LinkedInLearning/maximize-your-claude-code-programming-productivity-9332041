@@ -1,0 +1,25 @@
+{
+  "store": "Greenleaf Market",
+  "address": "421 Oak St, Portland OR",
+  "date": "2026-02-24",
+  "receipt_id": "R1000-204",
+  "items": [
+    {
+      "name": "Organic Bananas (lb)",
+      "qty": 2,
+      "unit_price": 0.69,
+      "line_total": 1.38
+    },
+    {
+      "name": "Sourdough Loaf",
+      "qty": 2,
+      "unit_price": 5.5,
+      "line_total": 11.0
+    }
+  ],
+  "subtotal": 12.38,
+  "tax_rate": 0.0,
+  "tax": 0.0,
+  "tip": 0.0,
+  "total": 12.38
+}

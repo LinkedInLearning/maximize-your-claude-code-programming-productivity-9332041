@@ -1,0 +1,37 @@
+{
+  "store": "Volt Electronics",
+  "address": "200 Tech Pkwy, Austin TX",
+  "date": "2026-04-18",
+  "receipt_id": "R1004-227",
+  "items": [
+    {
+      "name": "USB-C Cable 6ft",
+      "qty": 3,
+      "unit_price": 14.99,
+      "line_total": 44.97
+    },
+    {
+      "name": "Surge Protector",
+      "qty": 3,
+      "unit_price": 24.99,
+      "line_total": 74.97
+    },
+    {
+      "name": "HDMI Cable 10ft",
+      "qty": 3,
+      "unit_price": 19.99,
+      "line_total": 59.97
+    },
+    {
+      "name": "Mechanical Keyboard",
+      "qty": 1,
+      "unit_price": 89.99,
+      "line_total": 89.99
+    }
+  ],
+  "subtotal": 269.9,
+  "tax_rate": 0.0825,
+  "tax": 22.27,
+  "tip": 0.0,
+  "total": 292.17
+}

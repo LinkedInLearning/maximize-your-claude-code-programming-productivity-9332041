@@ -1,0 +1,25 @@
+{
+  "run_timestamp": "2026-05-09T18-32-09",
+  "inbox": "/Users/linkedin/Code/receipts/inbox",
+  "out": "/Users/linkedin/Code/receipts/out",
+  "received": 1,
+  "passed": 1,
+  "failed": 0,
+  "rows_appended_to_csv": 0,
+  "months_touched": [
+    "2026-02"
+  ],
+  "uncategorized_stores": [],
+  "results": [
+    {
+      "source_pdf": "receipt_01.pdf",
+      "store": "Greenleaf Market",
+      "date": "2026-02-24",
+      "category": "Groceries",
+      "total": 12.38,
+      "passed": true,
+      "issues": [],
+      "year_month": "2026-02"
+    }
+  ]
+}

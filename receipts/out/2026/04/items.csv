@@ -1,0 +1,8 @@
+date,year_month,store,category,receipt_id,item,qty,unit_price,line_total,tax,tip,total,source_pdf
+2026-04-18,2026-04,Volt Electronics,Electronics,R1004-227,USB-C Cable 6ft,3,14.99,44.97,22.27,0.00,292.17,receipt_05.pdf
+2026-04-18,2026-04,Volt Electronics,Electronics,R1004-227,Surge Protector,3,24.99,74.97,22.27,0.00,292.17,receipt_05.pdf
+2026-04-18,2026-04,Volt Electronics,Electronics,R1004-227,HDMI Cable 10ft,3,19.99,59.97,22.27,0.00,292.17,receipt_05.pdf
+2026-04-18,2026-04,Volt Electronics,Electronics,R1004-227,Mechanical Keyboard,1,89.99,89.99,22.27,0.00,292.17,receipt_05.pdf
+2026-04-13,2026-04,Yellow Cab,Transit,R1008-758,Distance (mi),2,2.85,5.70,0.00,0.00,14.20,receipt_09.pdf
+2026-04-13,2026-04,Yellow Cab,Transit,R1008-758,Wait Time (min),3,0.50,1.50,0.00,0.00,14.20,receipt_09.pdf
+2026-04-13,2026-04,Yellow Cab,Transit,R1008-758,Base Fare,2,3.50,7.00,0.00,0.00,14.20,receipt_09.pdf
