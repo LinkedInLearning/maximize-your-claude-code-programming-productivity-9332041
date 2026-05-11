@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Pre-commit smoke gate for the elevator services.
+#
+# Only fires when staged changes touch elevatorTDD/ — the surrounding git repo
+# at /Users/linkedin/Code contains many sibling projects and we don't want to
+# block their commits. Bypass with: SKIP_SMOKE=1 git commit ...
+set -euo pipefail
+
+if [ -n "${SKIP_SMOKE:-}" ]; then
+  echo "pre-commit: SKIP_SMOKE set, skipping smoke gate"
+  exit 0
+fi
+
+# Resolve the elevator directory from this hook's own location, not from
+# `git rev-parse --show-toplevel` (which points at the parent monorepo).
+ELEVATOR_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ELEVATOR_REL="$(basename "$ELEVATOR_DIR")"  # "elevatorTDD"
+
+if ! git diff --cached --name-only --diff-filter=ACMR | grep -q "^${ELEVATOR_REL}/"; then
+  echo "pre-commit: no ${ELEVATOR_REL}/ changes — skipping smoke gate"
+  exit 0
+fi
+
+cd "$ELEVATOR_DIR"
+
+trap 'scripts/stop.sh >/dev/null 2>&1 || true' EXIT
+
+echo "pre-commit: starting services..."
+scripts/deploy.sh
+
+PYTEST="${ELEVATOR_DIR}/.venv/bin/pytest"
+[ -x "$PYTEST" ] || PYTEST="pytest"
+
+echo "pre-commit: running smoke tests..."
+"$PYTEST" tests/smoke -m smoke -q
