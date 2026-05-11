@@ -33,12 +33,20 @@ def test_elevator_rejects_half_floor_request():
         elevator.call_to(2.5)
 
 
-def test_user_cannot_request_more_than_one_elevator():
-    first = Elevator()
-    second = Elevator()
-    first.call_to(3, user="alice")
+def test_user_is_locked_only_while_traveling():
+    import threading
+
+    first = Elevator(top_speed=10, current_floor=0)  # 5 floors → ~0.5s trip
+    second = Elevator(top_speed=100)
+    trip = threading.Thread(target=first.call_to, args=(5, "alice_lock"))
+    trip.start()
+    time.sleep(0.05)  # let the trip enter its travel window
     with pytest.raises(ValueError):
-        second.call_to(5, user="alice")
+        second.call_to(7, user="alice_lock")
+    trip.join()
+    # After the first trip arrives, alice is released and can call again.
+    second.call_to(2, user="alice_lock")
+    assert second.current_floor == 2
 
 
 def test_service_elevator_cannot_be_booked_by_multiple_users():

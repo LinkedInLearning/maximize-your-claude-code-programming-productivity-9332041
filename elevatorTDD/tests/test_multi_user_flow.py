@@ -49,7 +49,7 @@ def test_multi_user_call_sequence_with_breakdown_in_the_middle():
     rng = _scripted_rng([0.5, 0.0, 0.5])
     elevator = TestClient(
         build_elevator_app(
-            elevator_id="e1",
+            elevator_ids=["e1"],
             top_speed=100,
             rng=rng,
             technician_client=_TechnicianClientAdapter(technician),
@@ -58,13 +58,15 @@ def test_multi_user_call_sequence_with_breakdown_in_the_middle():
     )
 
     # 1. Alice rides normally.
-    alice = elevator.post("/call_to", json={"floor": 3, "user": "alice_multi"})
+    alice = elevator.post("/elevators/e1/call_to", json={"floor": 3, "user": "alice_multi"})
     assert alice.status_code == 200
-    assert alice.json()["current_floor"] == 3
+    assert alice.json()["to_floor"] == 3
+    time.sleep(0.1)  # let alice's trip complete
+    assert elevator.get("/elevators/e1/status").json()["current_floor"] == 3
     assert technician.get("/technicians/t1/status").json()["state"] == "idle"
 
     # 2. Bob's call rolls a breakdown — dispatch fires, response is 503 + ETA.
-    bob = elevator.post("/call_to", json={"floor": 7, "user": "bob_multi"})
+    bob = elevator.post("/elevators/e1/call_to", json={"floor": 7, "user": "bob_multi"})
     assert bob.status_code == 503
     bob_body = bob.json()
     assert bob_body["error"] == "fixing"
@@ -76,14 +78,14 @@ def test_multi_user_call_sequence_with_breakdown_in_the_middle():
 
     # 3. Charlie arrives while technician is still en route: same dispatch,
     #    smaller remaining ETA, no second dispatch (would 409 if it happened).
-    charlie = elevator.post("/call_to", json={"floor": 2, "user": "charlie_multi"})
+    charlie = elevator.post("/elevators/e1/call_to", json={"floor": 2, "user": "charlie_multi"})
     assert charlie.status_code == 503
     assert charlie.json()["technician_id"] == "t1"
     assert charlie.json()["eta_seconds"] <= bob_body["eta_seconds"]
 
     # 4. Dana also tries while the technician is still inbound — still 503.
     dana_first = elevator.post(
-        "/call_to", json={"floor": 5, "user": "dana_multi_first"}
+        "/elevators/e1/call_to", json={"floor": 5, "user": "dana_multi_first"}
     )
     assert dana_first.status_code == 503
     assert dana_first.json()["technician_id"] == "t1"
@@ -95,17 +97,21 @@ def test_multi_user_call_sequence_with_breakdown_in_the_middle():
     assert onsite["state"] == "onsite"
     assert onsite["eta_seconds"] == 0.0
 
-    # 6. Dana calls again — this one triggers the fix and then moves the elevator.
-    start = time.monotonic()
+    # 6. Dana calls again — this one triggers the fix and then moves the elevator
+    #    asynchronously. The HTTP call returns immediately with the combined ETA.
     dana_again = elevator.post(
-        "/call_to", json={"floor": 1, "user": "dana_multi_second"}
+        "/elevators/e1/call_to", json={"floor": 1, "user": "dana_multi_second"}
     )
-    fix_elapsed = time.monotonic() - start
     assert dana_again.status_code == 200
-    assert dana_again.json()["current_floor"] == 1
-    assert fix_elapsed >= fix_seconds  # the fix actually slept
+    assert dana_again.json()["to_floor"] == 1
+    assert dana_again.json()["eta_seconds"] >= fix_seconds
 
-    # Technician is freed once the fix completes.
+    # Wait for the fix + trip to actually complete.
+    time.sleep(fix_seconds + 0.1)
+    final = elevator.get("/elevators/e1/status").json()
+    assert final["current_floor"] == 1
+    assert final["in_motion"] is False
+
     after_fix = technician.get("/technicians/t1/status").json()
     assert after_fix["state"] == "idle"
     assert after_fix["elevator_id"] is None

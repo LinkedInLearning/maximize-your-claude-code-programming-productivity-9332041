@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Elevator control</title>
+  <style>
+    :root { font-family: system-ui, sans-serif; }
+    body { margin: 2rem auto; max-width: 60rem; padding: 0 1rem; }
+    h1 { margin-bottom: 0.25rem; }
+    .subtitle { color: #666; margin-top: 0; }
+    .panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 1rem; }
+    .panel { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; }
+    .panel h2 { margin: 0 0 0.5rem; font-size: 1.1rem; }
+    .floor-display { font-size: 3rem; text-align: center; font-weight: bold; }
+    .state-ok { color: #0a7d28; }
+    .state-broken { color: #b00020; }
+    .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; }
+    button { padding: 0.6rem 0; font-size: 1rem; cursor: pointer; border: 1px solid #999; border-radius: 6px; background: #f7f7f7; }
+    button:hover { background: #eee; }
+    label { display: block; margin: 0.5rem 0 0.25rem; font-size: 0.85rem; color: #555; }
+    input[type=text] { width: 100%; padding: 0.4rem; box-sizing: border-box; }
+    .log { font-family: ui-monospace, monospace; font-size: 0.8rem; max-height: 10rem; overflow-y: auto; background: #fafafa; padding: 0.5rem; border: 1px solid #eee; border-radius: 6px; margin-top: 0.5rem; }
+    .log div { padding: 0.1rem 0; border-bottom: 1px solid #f0f0f0; }
+    table.status { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
+    table.status th, table.status td { padding: 0.4rem 0.6rem; border-bottom: 1px solid #eee; text-align: left; font-size: 0.9rem; }
+    table.status th { background: #fafafa; }
+    .maint { background: #fff4cc; border-color: #d6b341; }
+    .maint:hover { background: #ffe999; }
+  </style>
+</head>
+<body>
+  <h1>Elevator control</h1>
+  <p class="subtitle">One panel per elevator. ~1% of calls trigger a breakdown. Use <em>Routine maintenance</em> to dispatch a technician on demand.</p>
+  <table class="status">
+    <thead>
+      <tr><th>Elevator</th><th>Floor</th><th>State</th><th>Technician</th><th>ETA (s)</th></tr>
+    </thead>
+    <tbody id="status-body"></tbody>
+  </table>
+  <div class="panels" id="panels"></div>
+
+  <script>
+    const panelsEl = document.getElementById("panels");
+    const panels = new Map(); // elevator_id -> { floorEl, stateEl, userInput, logEl }
+
+    function buildPanel(elevatorId) {
+      const panel = document.createElement("div");
+      panel.className = "panel";
+      panel.innerHTML = `
+        <h2>Elevator <span class="eid"></span></h2>
+        <div class="floor-display">–</div>
+        <div class="state" style="text-align:center;">loading…</div>
+        <label>User (optional)</label>
+        <input type="text" class="user" placeholder="e.g. alice" />
+        <div class="grid buttons" style="margin-top:0.75rem;"></div>
+        <button class="maint" style="width:100%; margin-top:0.5rem;">Routine maintenance</button>
+        <div class="log"></div>
+      `;
+      panel.querySelector(".eid").textContent = elevatorId;
+      const floorEl = panel.querySelector(".floor-display");
+      const stateEl = panel.querySelector(".state");
+      const userInput = panel.querySelector(".user");
+      const logEl = panel.querySelector(".log");
+      const buttons = panel.querySelector(".buttons");
+      for (let f = -1; f <= 8; f++) {
+        const b = document.createElement("button");
+        b.textContent = f;
+        b.onclick = () => callTo(elevatorId, f);
+        buttons.appendChild(b);
+      }
+      panel.querySelector(".maint").onclick = () => maintenance(elevatorId);
+      panelsEl.appendChild(panel);
+      panels.set(elevatorId, { floorEl, stateEl, userInput, logEl });
+    }
+
+    async function maintenance(elevatorId) {
+      try {
+        const res = await fetch(`/elevators/${elevatorId}/maintenance`, { method: "POST" });
+        const raw = await res.text();
+        let data;
+        try { data = JSON.parse(raw); } catch { data = { detail: raw }; }
+        if (res.status === 200) {
+          log(elevatorId, `maintenance → ${data.technician_id} ETA ${data.eta_seconds.toFixed(2)}s`);
+        } else {
+          log(elevatorId, `maintenance → ${res.status} ${data.detail || JSON.stringify(data)}`);
+        }
+      } catch (err) {
+        log(elevatorId, `maintenance → error ${err}`);
+      }
+      refresh();
+    }
+
+    function log(elevatorId, msg) {
+      const p = panels.get(elevatorId);
+      if (!p) return;
+      const row = document.createElement("div");
+      row.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      p.logEl.prepend(row);
+    }
+
+    async function callTo(elevatorId, floor) {
+      const p = panels.get(elevatorId);
+      const body = { floor };
+      const user = p.userInput.value.trim();
+      if (user) body.user = user;
+      log(elevatorId, `call_to(${floor}) requested${user ? ` by ${user}` : ""}`);
+      try {
+        const res = await fetch(`/elevators/${elevatorId}/call_to`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const raw = await res.text();
+        let data;
+        try { data = JSON.parse(raw); } catch { data = { error: raw }; }
+        if (res.status === 200) {
+          log(elevatorId, `call_to(${floor}) trip started: floor ${data.from_floor} → ${data.to_floor}, ETA ${data.eta_seconds.toFixed(2)}s`);
+        } else if (res.status === 503) {
+          log(elevatorId, `call_to(${floor}) → fixing (${data.technician_id}, ETA ${data.eta_seconds.toFixed(2)}s)`);
+        } else {
+          log(elevatorId, `call_to(${floor}) → ${res.status} ${data.error || JSON.stringify(data)}`);
+        }
+      } catch (err) {
+        log(elevatorId, `call_to(${floor}) → error ${err}`);
+      }
+      refresh();
+    }
+
+    const lastMotion = new Map(); // elevator_id -> bool
+
+    function render(status) {
+      const p = panels.get(status.elevator_id);
+      if (!p) return;
+      p.floorEl.textContent = Number(status.current_floor).toFixed(1);
+      if (status.is_broken) {
+        p.stateEl.innerHTML = `<span class="state-broken">BROKEN</span> · ${status.technician_id} arriving in ${status.eta_seconds.toFixed(1)}s`;
+      } else if (status.in_motion) {
+        p.stateEl.innerHTML = `<span class="state-ok">moving</span>`;
+      } else {
+        p.stateEl.innerHTML = `<span class="state-ok">idle</span>`;
+      }
+      const prev = lastMotion.get(status.elevator_id);
+      if (prev === true && status.in_motion === false) {
+        log(status.elevator_id, `arrived at floor ${Math.round(status.current_floor)}`);
+      }
+      lastMotion.set(status.elevator_id, status.in_motion);
+    }
+
+    function renderStatusTable(list) {
+      const tbody = document.getElementById("status-body");
+      tbody.innerHTML = "";
+      for (const s of list) {
+        const tr = document.createElement("tr");
+        const state = s.is_broken
+          ? `<span class="state-broken">BROKEN</span>`
+          : `<span class="state-ok">healthy</span>`;
+        const motionLabel = s.in_motion ? " (moving)" : "";
+        tr.innerHTML = `
+          <td>${s.elevator_id}</td>
+          <td>${Number(s.current_floor).toFixed(2)}${motionLabel}</td>
+          <td>${state}</td>
+          <td>${s.technician_id || "—"}</td>
+          <td>${s.eta_seconds ? s.eta_seconds.toFixed(2) : "—"}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    async function refresh() {
+      try {
+        const res = await fetch("/elevators", { cache: "no-store" });
+        const list = await res.json();
+        for (const s of list) {
+          if (!panels.has(s.elevator_id)) buildPanel(s.elevator_id);
+          render(s);
+        }
+        renderStatusTable(list);
+      } catch (err) {
+        // ignore transient errors during polling
+      }
+    }
+
+    refresh();
+    setInterval(refresh, 100);
+  </script>
+</body>
+</html>

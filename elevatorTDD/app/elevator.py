@@ -18,7 +18,11 @@ class Elevator:
                     f"User {user!r} already has an active elevator request"
                 )
             Elevator._active_users.add(user)
-        self._travel_to(floor)
+        try:
+            self._travel_to(floor)
+        finally:
+            if user is not None:
+                Elevator._active_users.discard(user)
 
     def _travel_to(self, floor):
         distance = abs(floor - self.current_floor)
