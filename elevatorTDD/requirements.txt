@@ -1,4 +1,6 @@
 fastapi
 httpx
+playwright
 pytest
+pytest-playwright
 uvicorn

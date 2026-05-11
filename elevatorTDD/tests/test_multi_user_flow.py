@@ -3,11 +3,19 @@
 Scenario: alice rides normally; bob's call rolls a breakdown; charlie and
 dana both arrive while the technician is still en route; dana calls again
 right after the ETA elapses and her call triggers the fix and the move.
+
+The browser-driven test below mirrors the same scenario through the UI. Setup:
+    pip install -r requirements.txt
+    playwright install chromium
 """
 
 import random
+import socket
+import threading
 import time
 
+import pytest
+import uvicorn
 from fastapi.testclient import TestClient
 
 from app.elevator_service import build_app as build_elevator_app
@@ -115,3 +123,203 @@ def test_multi_user_call_sequence_with_breakdown_in_the_middle():
     after_fix = technician.get("/technicians/t1/status").json()
     assert after_fix["state"] == "idle"
     assert after_fix["elevator_id"] is None
+
+
+def _free_port():
+    s = socket.socket()
+    s.bind(("127.0.0.1", 0))
+    port = s.getsockname()[1]
+    s.close()
+    return port
+
+
+def test_multi_user_call_sequence_through_the_browser():
+    sync_playwright = pytest.importorskip("playwright.sync_api").sync_playwright
+
+    travel_seconds = 0.5
+    fix_seconds = 0.5
+    technician = TestClient(
+        build_technician_app(technician_ids=["t1", "t2"], travel_seconds=travel_seconds)
+    )
+    rng = _scripted_rng([0.5, 0.0, 0.5])
+    elevator_app = build_elevator_app(
+        elevator_ids=["e1"],
+        top_speed=10,
+        rng=rng,
+        technician_client=_TechnicianClientAdapter(technician),
+        fix_seconds=fix_seconds,
+    )
+
+    port = _free_port()
+    config = uvicorn.Config(elevator_app, host="127.0.0.1", port=port, log_level="warning")
+    server = uvicorn.Server(config)
+    thread = threading.Thread(target=server.run, daemon=True)
+    thread.start()
+
+    deadline = time.monotonic() + 5.0
+    while not server.started and time.monotonic() < deadline:
+        time.sleep(0.05)
+    assert server.started, "uvicorn server failed to start"
+
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch()
+            page = browser.new_page()
+            try:
+                page.goto(f"http://127.0.0.1:{port}/")
+                page.wait_for_selector(".panel")
+                panel = page.locator(".panel")
+                state = panel.locator(".state")
+                floor = panel.locator(".floor-display")
+                user_input = panel.locator(".user")
+                log_rows = panel.locator(".log div")
+
+                def click_floor(label):
+                    panel.locator(".buttons button", has_text=str(label)).get_by_text(
+                        str(label), exact=True
+                    ).first.click()
+
+                # 1. Alice rides normally.
+                user_input.fill("alice_multi")
+                click_floor(3)
+                page.wait_for_function(
+                    "() => document.querySelector('.panel .floor-display').textContent === '3.0'",
+                    timeout=5_000,
+                )
+                state.get_by_text("idle").wait_for(timeout=5_000)
+                log_rows.filter(has_text="arrived at floor 3").first.wait_for(timeout=5_000)
+
+                # 2. Bob's call triggers a breakdown.
+                user_input.fill("bob_multi")
+                click_floor(7)
+                state.get_by_text("BROKEN").wait_for(timeout=5_000)
+                log_rows.filter(has_text="fixing (t1").first.wait_for(timeout=5_000)
+                status_row = page.locator("#status-body tr")
+                assert "t1" in status_row.inner_text()
+
+                # 3. Charlie arrives while technician en route — still BROKEN.
+                user_input.fill("charlie_multi")
+                click_floor(2)
+                log_rows.filter(has_text="call_to(2) requested by charlie_multi").first.wait_for(
+                    timeout=5_000
+                )
+                page.wait_for_function(
+                    "() => Array.from(document.querySelectorAll('.panel .log div'))"
+                    ".filter(d => d.textContent.includes('fixing (t1')).length >= 2",
+                    timeout=5_000,
+                )
+                assert "BROKEN" in state.inner_text()
+
+                # 4. Dana first call — still BROKEN.
+                user_input.fill("dana_multi_first")
+                click_floor(5)
+                log_rows.filter(has_text="call_to(5) requested by dana_multi_first").first.wait_for(
+                    timeout=5_000
+                )
+                page.wait_for_function(
+                    "() => Array.from(document.querySelectorAll('.panel .log div'))"
+                    ".filter(d => d.textContent.includes('fixing (t1')).length >= 3",
+                    timeout=5_000,
+                )
+                assert "BROKEN" in state.inner_text()
+
+                # 5. Wait for technician to arrive (ETA -> 0.0 while still BROKEN).
+                page.wait_for_function(
+                    "() => {"
+                    "  const t = document.querySelector('.panel .state').textContent;"
+                    "  return t.includes('BROKEN') && /arriving in 0\\.0s/.test(t);"
+                    "}",
+                    timeout=int((travel_seconds + 2.0) * 1000),
+                )
+
+                # 6. Dana's second call triggers the fix and the recovery trip.
+                user_input.fill("dana_multi_second")
+                click_floor(1)
+                log_rows.filter(has_text="trip started").first.wait_for(
+                    timeout=int((fix_seconds + 5.0) * 1000)
+                )
+                page.wait_for_function(
+                    "() => document.querySelector('.panel .floor-display').textContent === '1.0'"
+                    " && document.querySelector('.panel .state').textContent.includes('idle')",
+                    timeout=int((fix_seconds + 5.0) * 1000),
+                )
+                log_rows.filter(has_text="arrived at floor 1").first.wait_for(timeout=5_000)
+                assert floor.inner_text() == "1.0"
+            finally:
+                browser.close()
+    finally:
+        server.should_exit = True
+        thread.join(timeout=5.0)
+
+
+def test_two_users_in_separate_browsers_can_queue_concurrent_calls():
+    """RED: alice and bob each open their own browser tab and call the elevator
+    nearly simultaneously. We expect both trips to complete. Today the second
+    call hits a 409 ("elevator is in motion"), so this test fails until the
+    service learns to queue requests."""
+    sync_playwright = pytest.importorskip("playwright.sync_api").sync_playwright
+
+    travel_seconds = 0.5
+    fix_seconds = 0.5
+    technician = TestClient(
+        build_technician_app(technician_ids=["t1"], travel_seconds=travel_seconds)
+    )
+    rng = _scripted_rng([0.5, 0.5])  # neither alice nor bob break the elevator
+    elevator_app = build_elevator_app(
+        elevator_ids=["e1"],
+        top_speed=2,  # slow enough that bob's click lands while alice is moving
+        rng=rng,
+        technician_client=_TechnicianClientAdapter(technician),
+        fix_seconds=fix_seconds,
+    )
+
+    port = _free_port()
+    server = uvicorn.Server(
+        uvicorn.Config(elevator_app, host="127.0.0.1", port=port, log_level="warning")
+    )
+    thread = threading.Thread(target=server.run, daemon=True)
+    thread.start()
+    deadline = time.monotonic() + 5.0
+    while not server.started and time.monotonic() < deadline:
+        time.sleep(0.05)
+    assert server.started
+
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch()
+            try:
+                alice_ctx = browser.new_context()
+                bob_ctx = browser.new_context()
+                alice = alice_ctx.new_page()
+                bob = bob_ctx.new_page()
+                alice.goto(f"http://127.0.0.1:{port}/")
+                bob.goto(f"http://127.0.0.1:{port}/")
+                alice.wait_for_selector(".panel")
+                bob.wait_for_selector(".panel")
+
+                alice.locator(".panel .user").fill("alice_concurrent")
+                bob.locator(".panel .user").fill("bob_concurrent")
+
+                alice.locator(".panel .buttons button").get_by_text("5", exact=True).first.click()
+                # tiny stagger so alice's request lands first and the elevator is in motion
+                time.sleep(0.05)
+                bob.locator(".panel .buttons button").get_by_text("8", exact=True).first.click()
+
+                # Both should eventually see a successful trip start in their own log.
+                alice.locator(".panel .log div").filter(
+                    has_text="call_to(5) trip started"
+                ).first.wait_for(timeout=5_000)
+                bob.locator(".panel .log div").filter(
+                    has_text="call_to(8) trip started"
+                ).first.wait_for(timeout=5_000)
+
+                # And ultimately the elevator should reach floor 8 (the last queued call).
+                alice.wait_for_function(
+                    "() => document.querySelector('.panel .floor-display').textContent === '8.0'",
+                    timeout=int((travel_seconds + 10.0) * 1000),
+                )
+            finally:
+                browser.close()
+    finally:
+        server.should_exit = True
+        thread.join(timeout=5.0)
