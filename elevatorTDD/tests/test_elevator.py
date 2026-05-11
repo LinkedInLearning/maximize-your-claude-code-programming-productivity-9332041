@@ -161,6 +161,6 @@ def test_two_users_requesting_elevators_one_service_elevator_blocked():
 
     expected1 = 3 / top_speed
     expected2 = 5 / top_speed
-    tolerance = 0.05
+    tolerance = 0.03
     assert expected1 <= elapsed1 <= expected1 + tolerance
     assert expected2 <= elapsed2 <= expected2 + tolerance
