@@ -42,6 +42,12 @@ const TypingScreen = ({ player, config, onFinish, onAbort }) => {
     return () => clearInterval(id);
   }, [engine.startedAt, engine.finishedAt]);
 
+  // also re-sync `now` on every keystroke so the ghost marker's position
+  // updates within one animation frame of the player's input
+  useEffect(() => {
+    if (engine.startedAt && !engine.finishedAt) setNow(Date.now());
+  }, [engine.totalKeystrokes]);
+
   // keyboard handler
   useEffect(() => {
     const onKey = (e) => {
@@ -59,12 +65,19 @@ const TypingScreen = ({ player, config, onFinish, onAbort }) => {
     return () => window.removeEventListener("keydown", onKey);
   }, [settings.strict, onAbort]);
 
+  const [ghostWin, setGhostWin] = useState(false);
+
   // detect finish
   useEffect(() => {
     if (engine.finishedAt && !finishedRef.current) {
       finishedRef.current = true;
       const run = buildRun(engine, config.mode, best);
-      onFinish(run, config);
+      if (run.mode === "ghost" && run.beatGhost) {
+        setGhostWin(true);
+        setTimeout(() => onFinish(run, config), 1200);
+      } else {
+        onFinish(run, config);
+      }
     }
   }, [engine.finishedAt]);
 
@@ -132,6 +145,19 @@ const TypingScreen = ({ player, config, onFinish, onAbort }) => {
       </div>
 
       <div className="hint dim">Type the passage above. <kbd>Esc</kbd> to quit.</div>
+
+      {ghostWin && (
+        <div className="ghost-win-overlay" role="status" aria-live="polite">
+          <div className="ghost-win-burst">
+            <span className="gw gw1">👻</span>
+            <span className="gw gw2">🎉</span>
+            <span className="gw gw3">👻</span>
+            <span className="gw gw4">✨</span>
+            <span className="gw gw5">👻</span>
+          </div>
+          <div className="ghost-win-label">You beat the ghost!</div>
+        </div>
+      )}
     </div>
   );
 };

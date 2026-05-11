@@ -18,6 +18,7 @@ KeyQuest is a browser-based typing game that turns deliberate typing practice in
 - Selecting a profile routes to Home and persists the active profile across page reloads.
 - A profile can be deleted; confirmation is required and deletion removes that profile's run history from `localStorage`.
 - "Insert coin" arcade framing copy is present on the screen.
+- Visual check: screenshot of the roster screen shows existing profile tiles with avatar/color, the "Insert coin" framing, and the create-profile control.
 
 ### Home / Mode Picker
 
@@ -31,6 +32,7 @@ KeyQuest is a browser-based typing game that turns deliberate typing practice in
 - Selecting Ghost Race starts a run where the ghost target is 95% of the player's all-time best WPM.
 - The sidebar shows the player's best WPM and the last 3 runs (mode, time, WPM, accuracy).
 - When the player has a personal best, a ghost-challenge callout is visible.
+- Visual check: screenshot of Home shows the 2×2 mode grid, the sidebar with best WPM and last 3 runs, and (when a best exists) the ghost-challenge callout.
 
 ### Typing Engine
 
@@ -46,6 +48,21 @@ KeyQuest is a browser-based typing game that turns deliberate typing practice in
 - Pressing `Escape` ends the run and returns to Home without recording a result.
 - A run auto-completes the moment typed length equals target length, routing to Results.
 - When the active mode is Ghost Race, a progress bar shows both the player's marker and a ghost marker positioned by 95% of all-time best WPM.
+- Visual check: screenshot mid-run shows the live stats bar, faint untyped text, a correctly-rendered caret, and at least one correct and one incorrect character styled per spec.
+
+### Ghost Mode
+
+**Summary:** A race-against-yourself variant of the typing run where a "ghost" opponent — pegged to 95% of the player's all-time best WPM — types alongside the player in real time, with explicit win/loss feedback at the end.
+
+**Verification Criteria:**
+- Ghost Mode is only selectable once the player has at least one completed run (an all-time best exists to peg the ghost to).
+- During a Ghost Mode run, a ghost marker is continuously visible on the progress bar and advances in real time at exactly 95% of the player's all-time best WPM.
+- The ghost marker is visually distinct from the player marker (different color and a ghost glyph) and is labeled so the player can tell which marker is theirs.
+- The player marker and ghost marker remain visible on screen for the entire run — neither disappears when one is ahead.
+- The relative position of the two markers updates within one animation frame of each player keystroke.
+- If the player finishes the passage before the ghost completes its share, a "happy ghost" emoji reaction (a cluster of celebratory ghost emojis, e.g. 👻🎉👻✨👻) animates on screen at the moment of victory and persists into the Results screen's "Beat your ghost" badge.
+- If the ghost finishes first, no happy-ghost reaction plays; the run still completes and routes to Results without the "Beat your ghost" badge.
+- Visual check: a screenshot of an in-progress Ghost Mode run shows both markers on the progress bar with distinct styling; a screenshot of a winning finish shows the happy-ghost emoji cluster on screen.
 
 ### Results Screen
 
@@ -60,6 +77,7 @@ KeyQuest is a browser-based typing game that turns deliberate typing practice in
 - Any achievements newly unlocked by this run are listed with icon, name, and description.
 - Confetti plays on a personal best or on any new achievement unlock, unless the user has disabled confetti in Settings.
 - Action buttons present: "Run it again" (same mode and config), "Modes" (return to Home), "Progress" (open Dashboard).
+- Visual check: two screenshots — one of a non-PB result with a positive headline and the three stat boxes; one of a PB result showing the gold gradient, "PERSONAL BEST!" banner, and confetti.
 
 ### Dashboard
 
@@ -73,6 +91,7 @@ KeyQuest is a browser-based typing game that turns deliberate typing practice in
 - A QWERTY key heatmap colors each key green → yellow → red by miss frequency from `keyMisses`, with a hover tooltip showing the absolute miss count.
 - An achievement grid renders all 12 badges; unlocked badges are colorful, locked badges are grayscale with a lock indicator.
 - The run history table shows the last 15 runs with timestamps rendered as relative time (e.g., "just now", "2m ago", "3d ago").
+- Visual check: screenshot of the Dashboard shows all four KPI cards, both trend charts rendered with data, the per-mode best panel, the QWERTY heatmap with at least one colored key, and the 12-badge achievement grid.
 
 ### Settings
 
@@ -85,6 +104,7 @@ KeyQuest is a browser-based typing game that turns deliberate typing practice in
 - A "Switch player" action routes back to Player Select without losing other profiles' data.
 - A "Reset stats" action prompts for confirmation and, on confirm, clears the active player's run history and key-miss data but preserves the profile itself.
 - A version footer is visible.
+- Visual check: screenshot of Settings shows all toggles, both segmented selectors (text size, cursor style), the Switch player / Reset stats actions, and the version footer.
 
 ### Achievements System
 
@@ -96,6 +116,7 @@ KeyQuest is a browser-based typing game that turns deliberate typing practice in
 - "Ghostbuster" unlocks only when a Ghost Race run beats the 95%-of-best ghost target.
 - Newly unlocked badges appear on the Results screen for the run that unlocked them.
 - The Dashboard grid reflects unlocked / locked state immediately after a qualifying run completes.
+- Visual check: screenshot of the Dashboard achievement grid shows at least one unlocked (colorful) badge and at least one locked (grayscale + lock indicator) badge.
 
 ### Persistence & Multi-Profile Storage
 
@@ -107,6 +128,7 @@ KeyQuest is a browser-based typing game that turns deliberate typing practice in
 - Closing and reopening the browser preserves all profiles, settings, run history, key-miss data, and achievement unlocks.
 - Clearing site data wipes all KeyQuest state and the next visit starts at Player Select with no profiles.
 - The product loads and operates with no network requests after the first visit, assuming the browser has cached CDN assets.
+- Visual check: screenshot of devtools Application → Local Storage shows the `keyquest.v1` key present with parseable JSON containing players, settings, and run history.
 
 ### Tweaks Panel (Dev Overlay)
 
@@ -116,3 +138,4 @@ KeyQuest is a browser-based typing game that turns deliberate typing practice in
 - The panel exposes controls for font family, display weight (400–900), accent color, combo behavior, shake-on-error, and confetti.
 - Tweaks apply immediately to the running session.
 - Tweaks are not written to `localStorage` and reset on page reload.
+- Visual check: screenshot shows the bottom-right overlay open with its controls visible over a running session.

@@ -41,3 +41,15 @@
 - The `localStorage` key is versioned (`keyquest.v1`); schema-breaking changes must bump the version and include a migration or reset path.
 - The product runs without a build step (React + Babel standalone in the browser); any move to a build pipeline must be captured as an ADR.
 - Observability is currently absent (no analytics, no error reporting). Adding an opt-in anonymous ping is an open product question, not yet a requirement.
+
+## User Acceptance Testing
+
+UAT is performed manually against a deployed build before each release. The goal is to confirm that every feature in `Functional.md` behaves as specified from a player's perspective, not just that automated tests pass.
+
+- **Environment:** UAT runs against the production-equivalent static build in a clean browser profile (no prior `localStorage`) on the latest stable Chrome on macOS. A second pass on the latest stable Firefox is required before a release is signed off.
+- **Test plan source of truth:** Each feature's `**Verification Criteria:**` bullets in `Functional.md` are the UAT checklist. A release cannot ship with any unchecked criterion.
+- **Procedure:** For each feature, a tester walks through the criteria in order, marking each bullet pass / fail / blocked. Failures are filed with: the failing criterion verbatim, reproduction steps, browser + OS, and the screenshot from that feature's "Visual check" bullet.
+- **Visual checks:** The `Visual check` bullet on each feature defines the screenshot(s) the tester must capture and attach to the UAT record. Screenshots are taken at the default text size and cursor style unless the criterion specifies otherwise.
+- **Personas:** UAT is exercised against all four target personas (Arcade Kids 8–14, Self-Improvers 18–35, Coders, Family Device Sharers) — at minimum, one full run-through per persona, choosing the mode and settings that persona is most likely to use.
+- **Sign-off:** A release is signed off when (a) every Verification Criterion across all features is marked pass, (b) every required Visual check screenshot is attached, and (c) both Chrome and Firefox passes are complete. Sign-off is recorded with tester name, build SHA, and date.
+- **Regression scope:** A change scoped to a single feature requires UAT of that feature plus the Persistence, Settings, and Dashboard features (which read shared state). A change touching shared state (`localStorage` schema, global styles, the typing engine core) requires full UAT.

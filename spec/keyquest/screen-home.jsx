@@ -48,10 +48,15 @@ const HomeScreen = ({ player, onStart, onOpenDashboard, onOpenSettings, onSwitch
               <div className="mode-name">Code</div>
               <div className="mode-sub">Symbols + indentation</div>
             </div>
-            <div className="mode-card ghost" onClick={() => onStart({ mode: "ghost" })}>
+            <div
+              className={"mode-card ghost" + (hasPB ? "" : " disabled")}
+              onClick={hasPB ? () => onStart({ mode: "ghost" }) : undefined}
+              aria-disabled={!hasPB}
+              title={hasPB ? undefined : "Complete a run to unlock"}
+            >
               <div className="mode-icon"><Icon name="ghost" size={28}/></div>
               <div className="mode-name">Ghost Race</div>
-              <div className="mode-sub">Beat 95% of your best</div>
+              <div className="mode-sub">{hasPB ? "Beat 95% of your best" : "Complete a run to unlock"}</div>
             </div>
           </div>
         </section>
