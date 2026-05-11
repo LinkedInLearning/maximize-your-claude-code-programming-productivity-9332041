@@ -2,7 +2,7 @@ import time
 
 import pytest
 
-from elevator import Elevator, ServiceElevator
+from app.elevator import Elevator, ServiceElevator
 
 
 def test_elevator_starts_at_ground_floor_by_default():
