@@ -1,0 +1,183 @@
+{
+  "window": "November 2022",
+  "volume_filter": "pickup zones with \u22651,000 trips",
+  "taxi_total_trips": 3200009,
+  "rs_total_trips": 18063603,
+  "eligible_zones_taxi": 77,
+  "eligible_zones_rs": 250,
+  "overlap_count": 2,
+  "taxi_top": [
+    {
+      "zone": "Baisley Park",
+      "borough": "Queens",
+      "trips": 1231,
+      "avg_total": 67.74
+    },
+    {
+      "zone": "JFK Airport",
+      "borough": "Queens",
+      "trips": 162639,
+      "avg_total": 61.19
+    },
+    {
+      "zone": "LaGuardia Airport",
+      "borough": "Queens",
+      "trips": 94826,
+      "avg_total": 46.46
+    },
+    {
+      "zone": "East Elmhurst",
+      "borough": "Queens",
+      "trips": 13020,
+      "avg_total": 45.13
+    },
+    {
+      "zone": "Sunnyside",
+      "borough": "Queens",
+      "trips": 2548,
+      "avg_total": 32.73
+    },
+    {
+      "zone": "Long Island City/Hunters Point",
+      "borough": "Queens",
+      "trips": 2432,
+      "avg_total": 29.04
+    },
+    {
+      "zone": "Brooklyn Heights",
+      "borough": "Brooklyn",
+      "trips": 1848,
+      "avg_total": 27.54
+    },
+    {
+      "zone": "Park Slope",
+      "borough": "Brooklyn",
+      "trips": 1078,
+      "avg_total": 27.21
+    },
+    {
+      "zone": "Williamsburg (South Side)",
+      "borough": "Brooklyn",
+      "trips": 1177,
+      "avg_total": 26.94
+    },
+    {
+      "zone": "Williamsburg (North Side)",
+      "borough": "Brooklyn",
+      "trips": 1416,
+      "avg_total": 26.84
+    }
+  ],
+  "rideshare_top": [
+    {
+      "zone": "JFK Airport",
+      "borough": "Queens",
+      "trips": 320685,
+      "avg_total": 74.95
+    },
+    {
+      "zone": "LaGuardia Airport",
+      "borough": "Queens",
+      "trips": 355748,
+      "avg_total": 62.0
+    },
+    {
+      "zone": "Randalls Island",
+      "borough": "Manhattan",
+      "trips": 2086,
+      "avg_total": 48.7
+    },
+    {
+      "zone": "Times Sq/Theatre District",
+      "borough": "Manhattan",
+      "trips": 251835,
+      "avg_total": 44.2
+    },
+    {
+      "zone": "World Trade Center",
+      "borough": "Manhattan",
+      "trips": 71477,
+      "avg_total": 43.33
+    },
+    {
+      "zone": "Garment District",
+      "borough": "Manhattan",
+      "trips": 117212,
+      "avg_total": 42.65
+    },
+    {
+      "zone": "Financial District South",
+      "borough": "Manhattan",
+      "trips": 46901,
+      "avg_total": 42.33
+    },
+    {
+      "zone": "Midtown Center",
+      "borough": "Manhattan",
+      "trips": 252287,
+      "avg_total": 41.76
+    },
+    {
+      "zone": "Midtown North",
+      "borough": "Manhattan",
+      "trips": 174792,
+      "avg_total": 40.81
+    },
+    {
+      "zone": "Financial District North",
+      "borough": "Manhattan",
+      "trips": 119576,
+      "avg_total": 40.37
+    }
+  ],
+  "overlap_zones": [
+    {
+      "LocationID": 132,
+      "zone": "JFK Airport",
+      "borough": "Queens",
+      "taxi_avg": 61.19,
+      "rs_avg": 74.95,
+      "blended": 68.07
+    },
+    {
+      "LocationID": 138,
+      "zone": "LaGuardia Airport",
+      "borough": "Queens",
+      "taxi_avg": 46.46,
+      "rs_avg": 62.0,
+      "blended": 54.23
+    }
+  ],
+  "top_3_picks": [
+    {
+      "LocationID": 132,
+      "zone": "JFK Airport",
+      "borough": "Queens",
+      "taxi_avg": 61.19,
+      "rs_avg": 74.95,
+      "blended": 68.07,
+      "tag": "both",
+      "rationale": "JFK Airport: premium international + business arrivals, longest dwell of any zone."
+    },
+    {
+      "LocationID": 10,
+      "zone": "Baisley Park",
+      "borough": "Queens",
+      "taxi_avg": 67.74,
+      "rs_avg": null,
+      "blended": 64.35,
+      "tag": "taxi-only",
+      "rationale": "Top-10 on taxi-only with avg fare $64 \u2014 premium rider mix in Queens."
+    },
+    {
+      "LocationID": 138,
+      "zone": "LaGuardia Airport",
+      "borough": "Queens",
+      "taxi_avg": 46.46,
+      "rs_avg": 62.0,
+      "blended": 54.23,
+      "tag": "both",
+      "rationale": "LaGuardia: high-value business travelers, captive dwell at curbside taxi line."
+    }
+  ]
+}
