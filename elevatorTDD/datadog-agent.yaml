@@ -21,3 +21,8 @@ spec:
     logCollection:
       enabled: true
       containerCollectAll: true
+  override:
+    nodeAgent:
+      env:
+        - name: DD_KUBELET_TLS_VERIFY
+          value: "false"
