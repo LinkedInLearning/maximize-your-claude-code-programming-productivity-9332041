@@ -89,9 +89,34 @@ def test_velocity_returns_to_zero_after_arrival():
 def test_call_to_takes_real_time_proportional_to_distance_and_top_speed():
     elevator = Elevator(top_speed=20, current_floor=0)  # 20 floors/sec
     start = time.monotonic()
-    elevator.call_to(2)  # ~0.1s
+    elevator.call_to(2)  # exactly 2/20 = 0.1s
     elapsed = time.monotonic() - start
-    assert 0.08 <= elapsed <= 0.3
+    # Tight upper bound catches an off-by-one distance bug (3/20 = 0.15s).
+    assert 0.09 <= elapsed < 0.13
+
+
+def test_travel_time_matches_distance_over_top_speed_across_distances():
+    top_speed = 20
+    for distance in (1, 3, 5):
+        elevator = Elevator(top_speed=top_speed, current_floor=0)
+        start = time.monotonic()
+        elevator.call_to(distance)
+        elapsed = time.monotonic() - start
+        expected = distance / top_speed
+        assert abs(elapsed - expected) < 0.03, (
+            f"distance={distance}: expected ~{expected:.3f}s, got {elapsed:.3f}s"
+        )
+
+
+def test_call_to_same_floor_is_instant():
+    elevator = Elevator(top_speed=1, current_floor=4)
+    start = time.monotonic()
+    elevator.call_to(4)
+    elapsed = time.monotonic() - start
+    # No travel should happen; the bug made this sleep 1/top_speed = 1.0s.
+    assert elapsed < 0.05
+    assert elevator.current_floor == 4
+    assert elevator.velocity == 0
 
 
 def test_service_elevator_rejects_calls_from_non_booker():

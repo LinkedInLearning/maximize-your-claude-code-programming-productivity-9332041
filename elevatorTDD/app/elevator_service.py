@@ -1,7 +1,14 @@
+import logging
 import os
 import random
 import threading
 import time
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+)
+logger = logging.getLogger("elevator_service")
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
@@ -91,9 +98,19 @@ def build_app(*, elevator_ids, top_speed, rng, technician_client, fix_seconds):
     def _run_trip(elevator_id, trip, needs_fix):
         try:
             if needs_fix:
+                logger.info("trip %s: awaiting fix before travel", elevator_id)
                 technician_client.fix(elevator_id, fix_seconds)
                 repairs[elevator_id] = None
+            logger.info(
+                "trip %s: starting travel from=%s to=%s declared_duration=%.3fs",
+                elevator_id, trip.from_floor, trip.to_floor, trip.duration,
+            )
+            t0 = time.monotonic()
             elevators[elevator_id].call_to(trip.to_floor, user=None)
+            logger.info(
+                "trip %s: travel returned after %.3fs (declared %.3fs)",
+                elevator_id, time.monotonic() - t0, trip.duration,
+            )
         finally:
             trips[elevator_id] = None
             if trip.user is not None:
@@ -155,6 +172,10 @@ def build_app(*, elevator_ids, top_speed, rng, technician_client, fix_seconds):
         trips[elevator_id] = trip
         if req.user is not None:
             active_users.add(req.user)
+        logger.info(
+            "call_to %s: from=%s to=%s distance=%s duration=%.3fs user=%s needs_fix=%s",
+            elevator_id, from_floor, req.floor, distance, duration, req.user, needs_fix,
+        )
         threading.Thread(target=_run_trip, args=(elevator_id, trip, needs_fix), daemon=True).start()
         return {
             "from_floor": from_floor,

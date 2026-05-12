@@ -1,4 +1,7 @@
+import logging
 import time
+
+logger = logging.getLogger("elevator")
 
 
 class Elevator:
@@ -26,11 +29,16 @@ class Elevator:
 
     def _travel_to(self, floor):
         distance = abs(floor - self.current_floor)
+        logger.info(
+            "travel_to start: from=%s to=%s distance=%s top_speed=%s",
+            self.current_floor, floor, distance, self.top_speed,
+        )
         if self.top_speed and distance:
             self.velocity = _direction(self.current_floor, floor) * self.top_speed
             time.sleep(distance / self.top_speed)
         self.current_floor = floor
         self.velocity = 0
+        logger.info("travel_to done: at floor=%s", self.current_floor)
 
     def begin_trip(self, floor):
         self.velocity = _direction(self.current_floor, floor) * (self.top_speed or 0)
