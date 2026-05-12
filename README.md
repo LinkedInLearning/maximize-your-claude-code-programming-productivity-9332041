@@ -1,5 +1,5 @@
-# COURSENAME
-This is the repository for the LinkedIn Learning course `course-name`. The full course is available from [LinkedIn Learning][lil-course-url].
+# Maximize Your Claude Code Programming Productivity
+This is the repository for the LinkedIn Learning course `Maximize Your Claude Code Programming Productivity`. The full course is available from [LinkedIn Learning][lil-course-url].
 
 ![lil-thumbnail-url]
 
