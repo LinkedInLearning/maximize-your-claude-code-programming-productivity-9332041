@@ -169,65 +169,77 @@ def test_multi_user_call_sequence_through_the_browser():
                 page.goto(f"http://127.0.0.1:{port}/")
                 page.wait_for_selector(".panel")
                 panel = page.locator(".panel")
-                state = panel.locator(".state")
+                state = panel.locator(".state-label")
                 floor = panel.locator(".floor-display")
+                eta = panel.locator(".eta")
                 user_input = panel.locator(".user")
-                log_rows = panel.locator(".log div")
+                log_rows = panel.locator(".log .log-entry")
 
                 def click_floor(label):
                     panel.locator(".buttons button", has_text=str(label)).get_by_text(
                         str(label), exact=True
                     ).first.click()
 
+                def floor_text():
+                    # .floor-display has an integer text node + a .ring child;
+                    # take only the leading text node.
+                    return page.evaluate(
+                        "() => document.querySelector('.panel .floor-display')"
+                        ".firstChild.nodeValue"
+                    )
+
                 # 1. Alice rides normally.
                 user_input.fill("alice_multi")
                 click_floor(3)
                 page.wait_for_function(
-                    "() => document.querySelector('.panel .floor-display').textContent === '3.0'",
+                    "() => document.querySelector('.panel .floor-display')"
+                    ".firstChild.nodeValue === '3'",
                     timeout=5_000,
                 )
-                state.get_by_text("idle").wait_for(timeout=5_000)
+                state.get_by_text("idle", exact=True).wait_for(timeout=5_000)
                 log_rows.filter(has_text="arrived at floor 3").first.wait_for(timeout=5_000)
 
                 # 2. Bob's call triggers a breakdown.
                 user_input.fill("bob_multi")
                 click_floor(7)
-                state.get_by_text("BROKEN").wait_for(timeout=5_000)
-                log_rows.filter(has_text="fixing (t1").first.wait_for(timeout=5_000)
-                status_row = page.locator("#status-body tr")
-                assert "t1" in status_row.inner_text()
+                state.get_by_text("broken", exact=True).wait_for(timeout=5_000)
+                log_rows.filter(has_text="tech t1").first.wait_for(timeout=5_000)
+                # Technician id is surfaced in the panel's motion label, not a status table.
+                # CSS uppercases the motion label, so compare case-insensitively.
+                assert "t1" in panel.locator(".motion-label").inner_text().lower()
 
-                # 3. Charlie arrives while technician en route — still BROKEN.
+                # 3. Charlie arrives while technician en route — still broken.
                 user_input.fill("charlie_multi")
                 click_floor(2)
-                log_rows.filter(has_text="call_to(2) requested by charlie_multi").first.wait_for(
+                log_rows.filter(has_text="call → floor 2 · by charlie_multi").first.wait_for(
                     timeout=5_000
                 )
                 page.wait_for_function(
-                    "() => Array.from(document.querySelectorAll('.panel .log div'))"
-                    ".filter(d => d.textContent.includes('fixing (t1')).length >= 2",
+                    "() => Array.from(document.querySelectorAll('.panel .log .log-entry'))"
+                    ".filter(d => d.textContent.includes('tech t1')).length >= 2",
                     timeout=5_000,
                 )
-                assert "BROKEN" in state.inner_text()
+                assert "broken" in state.text_content()
 
-                # 4. Dana first call — still BROKEN.
+                # 4. Dana first call — still broken.
                 user_input.fill("dana_multi_first")
                 click_floor(5)
-                log_rows.filter(has_text="call_to(5) requested by dana_multi_first").first.wait_for(
+                log_rows.filter(has_text="call → floor 5 · by dana_multi_first").first.wait_for(
                     timeout=5_000
                 )
                 page.wait_for_function(
-                    "() => Array.from(document.querySelectorAll('.panel .log div'))"
-                    ".filter(d => d.textContent.includes('fixing (t1')).length >= 3",
+                    "() => Array.from(document.querySelectorAll('.panel .log .log-entry'))"
+                    ".filter(d => d.textContent.includes('tech t1')).length >= 3",
                     timeout=5_000,
                 )
-                assert "BROKEN" in state.inner_text()
+                assert "broken" in state.text_content()
 
-                # 5. Wait for technician to arrive (ETA -> 0.0 while still BROKEN).
+                # 5. Wait for technician to arrive (ETA -> 0.0 while still broken).
                 page.wait_for_function(
                     "() => {"
-                    "  const t = document.querySelector('.panel .state').textContent;"
-                    "  return t.includes('BROKEN') && /arriving in 0\\.0s/.test(t);"
+                    "  const s = document.querySelector('.panel .state-label').textContent;"
+                    "  const e = document.querySelector('.panel .eta').textContent;"
+                    "  return s.includes('broken') && /ETA 0\\.0s/.test(e);"
                     "}",
                     timeout=int((travel_seconds + 2.0) * 1000),
                 )
@@ -235,16 +247,20 @@ def test_multi_user_call_sequence_through_the_browser():
                 # 6. Dana's second call triggers the fix and the recovery trip.
                 user_input.fill("dana_multi_second")
                 click_floor(1)
-                log_rows.filter(has_text="trip started").first.wait_for(
+                # Elevator is at floor 3 (alice's destination) when dana's recovery
+                # call fires, so the log line is "trip 3 → 1".
+                log_rows.filter(has_text="trip 3 → 1").first.wait_for(
                     timeout=int((fix_seconds + 5.0) * 1000)
                 )
                 page.wait_for_function(
-                    "() => document.querySelector('.panel .floor-display').textContent === '1.0'"
-                    " && document.querySelector('.panel .state').textContent.includes('idle')",
+                    "() => document.querySelector('.panel .floor-display')"
+                    ".firstChild.nodeValue === '1'"
+                    " && document.querySelector('.panel .state-label').textContent"
+                    ".includes('idle')",
                     timeout=int((fix_seconds + 5.0) * 1000),
                 )
                 log_rows.filter(has_text="arrived at floor 1").first.wait_for(timeout=5_000)
-                assert floor.inner_text() == "1.0"
+                assert floor_text() == "1"
             finally:
                 browser.close()
     finally:
@@ -306,16 +322,18 @@ def test_two_users_in_separate_browsers_can_queue_concurrent_calls():
                 bob.locator(".panel .buttons button").get_by_text("8", exact=True).first.click()
 
                 # Both should eventually see a successful trip start in their own log.
-                alice.locator(".panel .log div").filter(
-                    has_text="call_to(5) trip started"
+                alice.locator(".panel .log .log-entry").filter(
+                    has_text="trip 0 → 5"
                 ).first.wait_for(timeout=5_000)
-                bob.locator(".panel .log div").filter(
-                    has_text="call_to(8) trip started"
+                # When queueing lands, bob's trip starts after alice arrives at 5.
+                bob.locator(".panel .log .log-entry").filter(
+                    has_text="trip 5 → 8"
                 ).first.wait_for(timeout=5_000)
 
                 # And ultimately the elevator should reach floor 8 (the last queued call).
                 alice.wait_for_function(
-                    "() => document.querySelector('.panel .floor-display').textContent === '8.0'",
+                    "() => document.querySelector('.panel .floor-display')"
+                    ".firstChild.nodeValue === '8'",
                     timeout=int((travel_seconds + 10.0) * 1000),
                 )
             finally:

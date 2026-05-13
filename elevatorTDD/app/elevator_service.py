@@ -3,12 +3,6 @@ import os
 import random
 import threading
 import time
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s %(message)s",
-)
-logger = logging.getLogger("elevator_service")
 from collections import deque
 from dataclasses import dataclass
 from pathlib import Path
@@ -20,6 +14,12 @@ from pydantic import BaseModel
 
 from app.elevator import Elevator
 from app.technician_client import TechnicianHttpClient
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+)
+logger = logging.getLogger("elevator_service")
 
 _STATIC_DIR = Path(__file__).parent / "static"
 
@@ -148,8 +148,18 @@ def build_app(*, elevator_ids, top_speed, rng, technician_client, fix_seconds):
 
     @app.get("/elevators/{elevator_id}/wait-stats")
     def wait_stats(elevator_id: str):
+        """Distribution of trip-queue waits.
+
+        Each accepted /call_to records one sample equal to the time between
+        the request being accepted and the trip thread actually starting to
+        move. On a healthy elevator that is near zero; on a call that arrives
+        while the technician is already onsite, the sample includes the
+        in-thread fix delay. 503'd calls are not samples (no trip is queued);
+        a user's gap between a 503 and their retry is therefore not measured
+        by this endpoint.
+        """
         _require(elevator_id)
-        values = sorted(wait_history[elevator_id])
+        values = sorted(wait_history[elevator_id].copy())
         if not values:
             return {"count": 0, "mean": 0.0, "p50": 0.0, "p95": 0.0, "max": 0.0}
         return {

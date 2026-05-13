@@ -4,7 +4,7 @@ import time
 import pytest
 from fastapi.testclient import TestClient
 
-from app.elevator_service import build_app
+from app.elevator_service import _percentile, build_app
 
 
 class FakeTechnicianClient:
@@ -229,6 +229,32 @@ def test_maintenance_returns_404_for_unknown_elevator():
     assert response.status_code == 404
 
 
+def test_percentile_empty_returns_zero():
+    assert _percentile([], 50) == 0.0
+    assert _percentile([], 95) == 0.0
+
+
+def test_percentile_single_value_returns_that_value():
+    assert _percentile([7.5], 0) == 7.5
+    assert _percentile([7.5], 50) == 7.5
+    assert _percentile([7.5], 100) == 7.5
+
+
+def test_percentile_endpoints_match_min_and_max():
+    values = [1.0, 2.0, 3.0, 4.0, 5.0]
+    assert _percentile(values, 0) == 1.0
+    assert _percentile(values, 100) == 5.0
+
+
+def test_percentile_interpolates_between_adjacent_samples():
+    # Linear interpolation between rank floors. For values [10, 20, 30, 40]:
+    # k = (n-1) * pct/100 = 3 * 0.5 = 1.5 → between values[1]=20 and values[2]=30,
+    # midpoint = 25.
+    assert _percentile([10.0, 20.0, 30.0, 40.0], 50) == 25.0
+    # k = 3 * 0.25 = 0.75 → between values[0]=10 and values[1]=20, 0.75 of the way = 17.5
+    assert _percentile([10.0, 20.0, 30.0, 40.0], 25) == 17.5
+
+
 WAIT_STATS_URL = "/elevators/e1/wait-stats"
 
 
@@ -253,18 +279,26 @@ def test_wait_stats_records_near_zero_wait_for_immediate_dispatch():
 
 
 def test_wait_stats_includes_fix_time_when_call_arrives_after_eta():
+    # First call breaks the elevator (rng=0.0). Subsequent rolls don't break,
+    # so the second call enters the needs_fix=True branch and waits for the
+    # fix to complete inside _run_trip before recording its wait.
     sequence = iter([0.0, 0.5, 0.5, 0.5])
     rng = random.Random()
     rng.random = lambda: next(sequence)
     technician = FakeTechnicianClient(eta_seconds=0.05)
-    client, _ = make_client(break_rng=rng, technician=technician, fix_seconds=0.1)
+    fix_seconds = 0.3
+    client, _ = make_client(
+        break_rng=rng, technician=technician, fix_seconds=fix_seconds, top_speed=100
+    )
     assert client.post(CALL_URL, json={"floor": 5}).status_code == 503
-    time.sleep(0.1)
+    time.sleep(0.1)  # > eta_seconds (0.05) so technician is onsite
     assert client.post(CALL_URL, json={"floor": 5}).status_code == 200
-    time.sleep(0.3)
+    time.sleep(fix_seconds + 0.2)  # let fix + trip finish
     body = client.get(WAIT_STATS_URL).json()
     assert body["count"] == 1
-    assert body["max"] >= 0.1  # at least the fix time
+    # Recorded wait must include the fix duration spent inside _run_trip.
+    assert body["max"] >= fix_seconds * 0.9
+    assert technician.fix_calls == [("e1", fix_seconds)]
 
 
 def test_wait_stats_returns_404_for_unknown_elevator():

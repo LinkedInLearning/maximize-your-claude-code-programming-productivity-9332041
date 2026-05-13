@@ -605,8 +605,6 @@
     const fleetCards = new Map();
     const lastMotion = new Map();
     const lastFloorInt = new Map();
-    const recentCall = new Map(); // elevatorId -> floor
-
     function shaftPositionPct(floor) {
       const clamped = Math.max(FLOOR_MIN, Math.min(FLOOR_MAX, floor));
       const t = (clamped - FLOOR_MIN) / FLOOR_RANGE;
@@ -744,7 +742,6 @@
       if (user) body.user = user;
       const btn = p.btnRefs.get(floor);
       if (btn) btn.classList.add("pending");
-      recentCall.set(elevatorId, floor);
       log(elevatorId, `call → floor ${floor}${user ? ` · by ${user}` : ""}`);
       try {
         const res = await fetch(`/elevators/${elevatorId}/call_to`, {
@@ -821,11 +818,10 @@
       lastMotion.set(status.elevator_id, status.in_motion);
       lastFloorInt.set(status.elevator_id, floorInt);
 
-      const recent = recentCall.get(status.elevator_id);
       for (const [f, btn] of p.btnRefs) {
         btn.classList.toggle("active", !status.in_motion && !status.is_broken && f === floorInt);
-        if (recent != null) {
-          btn.classList.toggle("pending", btn.classList.contains("pending") && status.in_motion);
+        if (btn.classList.contains("pending") && !status.in_motion) {
+          btn.classList.remove("pending");
         }
       }
     }
