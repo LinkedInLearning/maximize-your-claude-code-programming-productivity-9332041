@@ -9,6 +9,7 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s %(message)s",
 )
 logger = logging.getLogger("elevator_service")
+from collections import deque
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
@@ -41,6 +42,20 @@ class _Trip:
     started_at: float
     duration: float
     user: Optional[str]
+    called_at: float = 0.0
+
+
+_WAIT_HISTORY_MAX = 256
+
+
+def _percentile(sorted_values, pct):
+    if not sorted_values:
+        return 0.0
+    k = (len(sorted_values) - 1) * (pct / 100.0)
+    lo = int(k)
+    hi = min(lo + 1, len(sorted_values) - 1)
+    frac = k - lo
+    return sorted_values[lo] + (sorted_values[hi] - sorted_values[lo]) * frac
 
 
 def build_app(*, elevator_ids, top_speed, rng, technician_client, fix_seconds):
@@ -48,6 +63,7 @@ def build_app(*, elevator_ids, top_speed, rng, technician_client, fix_seconds):
     elevators = {eid: Elevator(top_speed=top_speed) for eid in elevator_ids}
     repairs = {eid: None for eid in elevator_ids}
     trips = {eid: None for eid in elevator_ids}
+    wait_history = {eid: deque(maxlen=_WAIT_HISTORY_MAX) for eid in elevator_ids}
     active_users = set()
 
     def _require(eid):
@@ -106,6 +122,7 @@ def build_app(*, elevator_ids, top_speed, rng, technician_client, fix_seconds):
                 elevator_id, trip.from_floor, trip.to_floor, trip.duration,
             )
             t0 = time.monotonic()
+            wait_history[elevator_id].append(max(0.0, t0 - trip.called_at))
             elevators[elevator_id].call_to(trip.to_floor, user=None)
             logger.info(
                 "trip %s: travel returned after %.3fs (declared %.3fs)",
@@ -128,6 +145,20 @@ def build_app(*, elevator_ids, top_speed, rng, technician_client, fix_seconds):
     def status(elevator_id: str):
         _require(elevator_id)
         return _status_for(elevator_id)
+
+    @app.get("/elevators/{elevator_id}/wait-stats")
+    def wait_stats(elevator_id: str):
+        _require(elevator_id)
+        values = sorted(wait_history[elevator_id])
+        if not values:
+            return {"count": 0, "mean": 0.0, "p50": 0.0, "p95": 0.0, "max": 0.0}
+        return {
+            "count": len(values),
+            "mean": sum(values) / len(values),
+            "p50": _percentile(values, 50),
+            "p95": _percentile(values, 95),
+            "max": values[-1],
+        }
 
     @app.post("/elevators/{elevator_id}/maintenance")
     def maintenance(elevator_id: str):
@@ -162,12 +193,14 @@ def build_app(*, elevator_ids, top_speed, rng, technician_client, fix_seconds):
         from_floor = elevators[elevator_id].current_floor
         distance = abs(req.floor - from_floor)
         duration = distance / top_speed if top_speed and distance else 0.0
+        now = time.monotonic()
         trip = _Trip(
             from_floor=from_floor,
             to_floor=req.floor,
-            started_at=time.monotonic() + (fix_seconds if needs_fix else 0.0),
+            started_at=now + (fix_seconds if needs_fix else 0.0),
             duration=duration,
             user=req.user,
+            called_at=now,
         )
         trips[elevator_id] = trip
         if req.user is not None:

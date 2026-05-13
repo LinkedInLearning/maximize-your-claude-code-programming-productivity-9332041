@@ -229,6 +229,66 @@ def test_maintenance_returns_404_for_unknown_elevator():
     assert response.status_code == 404
 
 
+WAIT_STATS_URL = "/elevators/e1/wait-stats"
+
+
+def test_wait_stats_empty_before_any_calls():
+    rng = random.Random()
+    rng.random = lambda: 0.99
+    client, _ = make_client(break_rng=rng)
+    body = client.get(WAIT_STATS_URL).json()
+    assert body == {"count": 0, "mean": 0.0, "p50": 0.0, "p95": 0.0, "max": 0.0}
+
+
+def test_wait_stats_records_near_zero_wait_for_immediate_dispatch():
+    rng = random.Random()
+    rng.random = lambda: 0.99
+    client, _ = make_client(break_rng=rng, top_speed=100)
+    client.post(CALL_URL, json={"floor": 5})
+    time.sleep(0.15)
+    body = client.get(WAIT_STATS_URL).json()
+    assert body["count"] == 1
+    assert body["max"] < 0.1
+    assert body["mean"] < 0.1
+
+
+def test_wait_stats_includes_fix_time_when_call_arrives_after_eta():
+    sequence = iter([0.0, 0.5, 0.5, 0.5])
+    rng = random.Random()
+    rng.random = lambda: next(sequence)
+    technician = FakeTechnicianClient(eta_seconds=0.05)
+    client, _ = make_client(break_rng=rng, technician=technician, fix_seconds=0.1)
+    assert client.post(CALL_URL, json={"floor": 5}).status_code == 503
+    time.sleep(0.1)
+    assert client.post(CALL_URL, json={"floor": 5}).status_code == 200
+    time.sleep(0.3)
+    body = client.get(WAIT_STATS_URL).json()
+    assert body["count"] == 1
+    assert body["max"] >= 0.1  # at least the fix time
+
+
+def test_wait_stats_returns_404_for_unknown_elevator():
+    rng = random.Random()
+    rng.random = lambda: 0.99
+    client, _ = make_client(break_rng=rng)
+    response = client.get("/elevators/ghost/wait-stats")
+    assert response.status_code == 404
+
+
+def test_wait_stats_aggregates_multiple_calls():
+    rng = random.Random()
+    rng.random = lambda: 0.99
+    client, _ = make_client(break_rng=rng, top_speed=100)
+    for floor in (3, 1, 4):
+        client.post(CALL_URL, json={"floor": floor})
+        time.sleep(0.15)
+    body = client.get(WAIT_STATS_URL).json()
+    assert body["count"] == 3
+    assert body["p50"] >= 0
+    assert body["p95"] >= body["p50"]
+    assert body["max"] >= body["p95"]
+
+
 def test_call_to_after_maintenance_completes_recovers_and_moves():
     rng = random.Random()
     rng.random = lambda: 0.99
