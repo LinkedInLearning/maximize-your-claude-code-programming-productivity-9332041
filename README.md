@@ -41,13 +41,12 @@ To resolve this issue:
 
 ## Instructor
 
-Instructor name
+Denys Linkov
+Head of ML at Wisedocs
 
-Instructor description
+Denys leads efforts in natural language understanding, generative natural language processing, MLOps, and conversational data discovery and augmentation. Denys helps build thriving, sustainable tech communities, with a focus on youth development and the future of work. Denys has a bachelor of science in computer science from the University of Toronto, has worked with a number of youth groups as a mentor and speaker, and helped scale TU20, a leading youth tech group in Halton, Ontario.
 
-                            
-
-Check out my other courses on [LinkedIn Learning](https://www.linkedin.com/learning/instructors/).
+Check out my other courses on [LinkedIn Learning](https://www.linkedin.com/learning/instructors/denys-linkov?u=104).
 
 
 [0]: # (Replace these placeholder URLs with actual course URLs)
