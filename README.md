@@ -9,6 +9,12 @@ _See the readme file in the main branch for updated instructions and information
 
 Claude Code is exploding across the development landscape. What began as a model optimized for developers has sprouted an ever-expanding set of tools for creating, managing, integrating, and deploying software. Learn to plan and implement sophisticated, AI-driven workflows that go beyond basic code prompting. Discover the essential skills to set up an optimized UI design system, effortlessly incorporating Figma designs into your projects. Hone your skills in test-driven development to ensure code quality and robustness in any development pipeline. Delve into developer-focused environments, setting up MCP servers for seamless integration across platforms like GitHub and Jira. Elevate your coding with the creation of automated, intelligent agents designed to enhance your development ecosystem. Perfect for developers already familiar with Claude Code, this course is tailored to boost productivity and innovation within your existing workflows.
 
+- Design structured AI workflows using multistep plans, Skills, MCP servers, and managed agents to move beyond simple prompting.
+- Apply AI‑driven testing and quality practices including TDD, unit, integration, smoke, and automated UAT in modern development pipelines.
+- Create production-ready front‑end and product experiences by integrating designs, component libraries, and PRDs with Claude Code.
+- Integrate Claude Code across the developer toolchain by connecting GitHub, Jira, data platforms, observability tools, and documentation systems.
+- Adapt to the evolving role of developers by leveraging AI agents for coding, data analysis, reporting, and decision-making at scale.
+
 ## Instructions
 This repository has branches for each of the videos in the course. You can use the branch pop up menu in github to switch to a specific branch and take a look at the course at that stage, or you can add `/tree/BRANCH_NAME` to the URL to go to the branch you want to access.
 
